@@ -1,5 +1,5 @@
 /**
- * PROJECT POLIS — PS-03 (HORIZON'26)
+ * PROJECT UrbanLens — PS-03 (HORIZON'26)
  * Architecture: Vanilla JS + Three.js (single file)
  * Entry: index.html → main.js
  * Note: src/ contains an experimental React port (dead code, not loaded)
