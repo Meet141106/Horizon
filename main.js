@@ -145,7 +145,7 @@ function init3D() {
 
   window.addEventListener('resize', onWindowResize);
   
-  // Single click removed. Added double click listener.
+  // Double click listener
   renderer.domElement.addEventListener('dblclick', onMapDoubleClick);
   renderer.domElement.addEventListener('mousemove', onMapHover);
 
@@ -175,9 +175,9 @@ function createZonePlanes() {
     const div = document.createElement('div');
     div.className = 'zone-label';
     div.textContent = z.name;
-    div.style.color = z.color;
+    div.style.color = '#' + z.color.toString(16).padStart(6, '0');
     div.style.fontWeight = '800';
-    div.style.fontSize = '1rem';
+    div.style.fontSize = window.innerWidth <= 480 ? '9px' : '11px';
     div.style.textTransform = 'uppercase';
     div.style.opacity = '0.6';
     div.style.pointerEvents = 'none';
@@ -193,6 +193,13 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
+  
+  // Update zone label sizes
+  document.querySelectorAll('.zone-label').forEach(el => {
+    el.style.fontSize = window.innerWidth <= 480 ? '9px' : '11px';
+  });
+  
+  initMobileTabs();
 }
 
 function onMapDoubleClick(event) {
@@ -227,15 +234,26 @@ function onMapDoubleClick(event) {
     }
     ghostPin.position.set(currentHitPoint.x, 0, currentHitPoint.z);
 
-    // Create or update ghost label
+    // Create or update ghost label (Google Maps style)
     if (!ghostLabel) {
       const div = document.createElement('div');
       div.className = 'ghost-zone-label';
+      div.style.cssText = `
+        font-family: 'Outfit', sans-serif;
+        font-size: ${window.innerWidth <= 480 ? '9px' : '11px'};
+        color: white;
+        background: rgba(0,0,0,0.5);
+        padding: 3px 8px;
+        border-radius: 4px;
+        opacity: 0.75;
+        pointer-events: none;
+        white-space: nowrap;
+      `;
       ghostLabel = new CSS2DObject(div);
       scene.add(ghostLabel);
     }
     ghostLabel.element.innerText = zoneInfo.name;
-    ghostLabel.position.set(currentHitPoint.x, 5, currentHitPoint.z);
+    ghostLabel.position.set(currentHitPoint.x, 15, currentHitPoint.z);
 
     // Enable form
     addIssueForm.classList.remove('inactive-form');
@@ -243,6 +261,7 @@ function onMapDoubleClick(event) {
     document.getElementById('issue-category').disabled = false;
     document.getElementById('submit-issue').disabled = false;
     document.getElementById('cancel-issue').disabled = false;
+    document.getElementById('form-helper-text').style.display = 'none';
 
     const formZone = document.getElementById('form-zone-name');
     formZone.innerText = `📍 ${zoneInfo.name}`;
@@ -258,6 +277,7 @@ function clearGhostPin() {
   document.getElementById('cancel-issue').disabled = true;
   document.getElementById('issue-title').value = '';
   document.getElementById('form-zone-name').innerText = '';
+  document.getElementById('form-helper-text').style.display = 'block';
   
   if (ghostPin) { scene.remove(ghostPin); ghostPin = null; }
   if (ghostLabel) { scene.remove(ghostLabel); ghostLabel = null; }
@@ -347,7 +367,7 @@ function animate() {
   const time = Date.now() * 0.005;
   pinGroup.children.forEach(pin => {
     if (pin.userData.isPin) {
-      const halo = pin.children[1];
+      const halo = pin.children[2];
       const scale = 1 + 0.5 * Math.sin(time + pin.userData.phase);
       halo.scale.set(scale, scale, scale);
       halo.material.opacity = 0.5 - (0.2 * Math.sin(time + pin.userData.phase));
@@ -355,7 +375,7 @@ function animate() {
   });
 
   if (ghostPin) {
-    const scale = 1 + 0.1 * Math.sin(time * 2);
+    const scale = 0.9 + 0.2 * Math.sin(time * 2);
     ghostPin.children[1].scale.set(scale, scale, scale); // orb
   }
   
@@ -403,7 +423,7 @@ function renderKanban() {
         card.innerHTML = `
           <div class="card-title">${issue.title}</div>
           <div class="card-meta">
-            <span style="text-transform: capitalize; color: var(--card-color);">${issue.category}</span>
+            <span style="text-transform: capitalize; color: var(--card-color); font-size: 13px;">${issue.category}</span>
             <button class="upvote-btn" data-id="${issue.id}">▲ ${issue.votes}</button>
           </div>
         `;
@@ -411,6 +431,51 @@ function renderKanban() {
         card.addEventListener('dragstart', handleDragStart);
         card.addEventListener('dragend', handleDragEnd);
         
+        // Touch Support
+        let touchStartY, touchStartX, clone, sourceCol;
+        card.addEventListener('touchstart', e => {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          sourceCol = card.closest('.kanban-column').dataset.status;
+          clone = card.cloneNode(true);
+          clone.style.cssText = `
+            position: fixed; opacity: 0.85; pointer-events: none; z-index: 9999;
+            width: ${card.offsetWidth}px; transform: rotate(3deg);
+            left: ${touchStartX - card.offsetWidth/2}px; top: ${touchStartY - 30}px;
+          `;
+          document.body.appendChild(clone);
+        }, { passive: true });
+
+        card.addEventListener('touchmove', e => {
+          if (!clone) return;
+          e.preventDefault();
+          const tx = e.touches[0].clientX;
+          const ty = e.touches[0].clientY;
+          clone.style.left = (tx - card.offsetWidth/2) + 'px';
+          clone.style.top  = (ty - 30) + 'px';
+        }, { passive: false });
+
+        card.addEventListener('touchend', e => {
+          if (!clone) return;
+          clone.remove();
+          clone = null;
+          const tx = e.changedTouches[0].clientX;
+          const ty = e.changedTouches[0].clientY;
+          const target = document.elementFromPoint(tx, ty)?.closest('.kanban-column');
+          if (target && target.dataset.status !== sourceCol) {
+            const issueId = card.dataset.id;
+            const issue = issues.find(i => i.id === issueId);
+            if (issue) {
+              issue.status = target.dataset.status;
+              if (issue.status === 'resolved') {
+                setTimeout(() => { issue.verified = true; saveState(); updateUI(); }, 2000);
+              }
+              saveState();
+              updateUI();
+            }
+          }
+        });
+
         card.querySelector('.upvote-btn').addEventListener('click', (e) => {
           e.stopPropagation(); 
           issue.votes++;
@@ -425,6 +490,41 @@ function renderKanban() {
     const avg = colIssues.length ? Math.round(totalVotes / colIssues.length) : 0;
     col.querySelector('.avg-upvotes').innerText = avg;
   });
+
+  initMobileTabs();
+}
+
+function initMobileTabs() {
+  if (window.innerWidth > 480) {
+    const existing = document.querySelector('.mobile-kanban-tabs');
+    if (existing) existing.remove();
+    document.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('active-tab'));
+    return;
+  }
+  
+  if (document.querySelector('.mobile-kanban-tabs')) return;
+
+  const tabs = document.createElement('div');
+  tabs.className = 'mobile-kanban-tabs';
+  tabs.innerHTML = `
+    <button class="tab-btn active" data-col="new">NEW</button>
+    <button class="tab-btn" data-col="inprogress">IN PROGRESS</button>
+    <button class="tab-btn" data-col="resolved">RESOLVED</button>
+  `;
+  document.querySelector('.kanban-board').before(tabs);
+  
+  tabs.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('active-tab'));
+      const targetCol = document.querySelector(`.kanban-column[data-status="${btn.dataset.col}"]`);
+      if (targetCol) targetCol.classList.add('active-tab');
+    });
+  });
+  
+  const firstCol = document.querySelectorAll('.kanban-column')[0];
+  if (firstCol) firstCol.classList.add('active-tab');
 }
 
 let draggedCard = null;
