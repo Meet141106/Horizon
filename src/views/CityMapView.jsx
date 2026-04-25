@@ -1,93 +1,17 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment } from '@react-three/drei';
-import * as THREE from 'three';
-import { usePolisState, addIssue, COLOR_HEX } from '../state.js';
+import { usePolisState, addIssue, COLOR_MAP } from '../state.js';
 import './CityMap.css';
 
-function CityModel() {
-  const { scene } = useGLTF('/cyberpunk_city_-_1.glb');
-  
-  useEffect(() => {
-    // Auto-scale model
-    const box = new THREE.Box3().setFromObject(scene);
-    const size = box.getSize(new THREE.Vector3()).length();
-    const center = box.getCenter(new THREE.Vector3());
-    
-    scene.position.x += (scene.position.x - center.x);
-    scene.position.y += (scene.position.y - center.y); 
-    scene.position.z += (scene.position.z - center.z);
-    
-    scene.position.y = 0;
-    
-    const desiredSize = 200;
-    const scale = desiredSize / size;
-    scene.scale.set(scale, scale, scale);
-    
-    scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        if (child.material) {
-          child.material.roughness = 0.3;
-          child.material.metalness = 0.8;
-        }
-      }
-    });
-  }, [scene]);
+const VIEWBOX_WIDTH = 1000;
+const VIEWBOX_HEIGHT = 800;
 
-  return <primitive object={scene} />;
-}
-
-function Pins({ issues }) {
-  const groupRef = useRef();
-
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    const time = state.clock.getElapsedTime() * 5;
-    
-    groupRef.current.children.forEach(pin => {
-      if (pin.userData.isPin) {
-        // Orbit scaling pulse
-        const scale = 1 + 0.2 * Math.sin(time + pin.userData.phase);
-        pin.children[1].scale.set(scale, scale, scale); // Orb is index 1
-      }
-    });
-  });
-
-  return (
-    <group ref={groupRef}>
-      {issues.map(issue => {
-        const color = COLOR_HEX[issue.category];
-        const phase = (issue.id % 10) * Math.PI * 2;
-        
-        return (
-          <group 
-            key={issue.id} 
-            position={[issue.x, 5, issue.z]} 
-            userData={{ isPin: true, id: issue.id, phase }}
-          >
-            {/* Shaft */}
-            <mesh>
-              <cylinderGeometry args={[0.5, 0.5, 10]} />
-              <meshBasicMaterial color={0xffffff} transparent opacity={0.5} />
-            </mesh>
-            {/* Orb */}
-            <mesh position={[0, 6, 0]}>
-              <sphereGeometry args={[3, 16, 16]} />
-              <meshBasicMaterial color={color} />
-            </mesh>
-            {/* Halo Ground */}
-            <mesh position={[0, -4.9, 0]} rotation={[-Math.PI/2, 0, 0]}>
-              <ringGeometry args={[2, 5 + (issue.votes * 0.1), 32]} />
-              <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.2} />
-            </mesh>
-          </group>
-        );
-      })}
-    </group>
-  );
-}
+const CITY_ZONES = [
+  { id: 'industrial', name: 'Industrial Belt', points: '50,50 450,50 450,350 50,350', color: '#1a1f2c', stroke: '#00d2ff' },
+  { id: 'residential', name: 'Residential Ring', points: '500,50 950,50 950,450 500,450', color: '#16212e', stroke: '#4caf50' },
+  { id: 'market', name: 'Neon Market', points: '50,400 450,400 450,750 50,750', color: '#251a2c', stroke: '#ffde00' },
+  { id: 'park', name: 'Park Sector', points: '500,500 700,500 700,750 500,750', color: '#1a2c1f', stroke: '#00ff66' },
+  { id: 'civic', name: 'Civic Core', points: '750,500 950,500 950,750 750,750', color: '#2c1a1a', stroke: '#ff2a2a' },
+];
 
 export default function CityMapView() {
   const state = usePolisState();
@@ -95,27 +19,83 @@ export default function CityMapView() {
   const [showForm, setShowForm] = useState(false);
   const [targetCoords, setTargetCoords] = useState(null);
   
+  // Pan & Zoom State
+  const [viewState, setViewState] = useState({ x: 0, y: 0, scale: 1 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
+  
+  const mapRef = useRef(null);
   const titleRef = useRef();
   const categoryRef = useRef();
 
   useEffect(() => {
-    // Poll or subscribe to state changes if needed. 
-    // For simplicity we just read it on mount or rely on React state
-    // But since state is external, a true subscription is better:
     import('../state.js').then(({ subscribe }) => {
-      return subscribe((s) => setIssues(s.issues));
+      const unsub = subscribe((s) => setIssues(s.issues));
+      return () => unsub();
     });
   }, []);
 
-  const handleDoubleClick = (e) => {
-    // We intercept double click on the Canvas container
-    // In R3F, we can just use the onClick on an invisible ground plane
+  // Handle Pan (Drag)
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return; // Left click only
+    setIsDragging(true);
+    setLastMouse({ x: e.clientX, y: e.clientY });
   };
 
-  const handleGroundClick = (e) => {
-    e.stopPropagation();
-    const { point } = e;
-    setTargetCoords({ x: point.x, z: point.z });
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastMouse.x;
+    const dy = e.clientY - lastMouse.y;
+    setViewState(prev => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+    setLastMouse({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  // Handle Zoom (Wheel)
+  const handleWheel = (e) => {
+    // Zoom toward cursor implementation
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.min(Math.max(viewState.scale * delta, 0.4), 4);
+    
+    // Calculate mouse position relative to SVG layer before zoom
+    const rect = mapRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // Adjust x and y to zoom towards mouse point
+    const dx = (mouseX - viewState.x) * (1 - delta);
+    const dy = (mouseY - viewState.y) * (1 - delta);
+
+    setViewState(prev => ({
+      x: prev.x + dx,
+      y: prev.y + dy,
+      scale: newScale
+    }));
+  };
+
+  // Coordinate Unprojection (Screen to SVG Viewbox)
+  const getMapCoords = (clientX, clientY) => {
+    const rect = mapRef.current.getBoundingClientRect();
+    // Normalize to 0-1 within the screen element
+    const normX = (clientX - rect.left - viewState.x) / (rect.width * viewState.scale);
+    const normY = (clientY - rect.top - viewState.y) / (rect.height * viewState.scale);
+    
+    // Map to viewbox
+    return {
+      x: normX * VIEWBOX_WIDTH,
+      y: normY * VIEWBOX_HEIGHT
+    };
+  };
+
+  const handleMapClick = (e) => {
+    // If we just finished a drag, don't trigger a click
+    const dx = Math.abs(e.clientX - lastMouse.x);
+    const dy = Math.abs(e.clientY - lastMouse.y);
+    if (dx > 5 || dy > 5) return;
+
+    const coords = getMapCoords(e.clientX, e.clientY);
+    setTargetCoords(coords);
     setShowForm(true);
   };
 
@@ -128,75 +108,127 @@ export default function CityMapView() {
       title,
       category,
       x: targetCoords.x,
-      z: targetCoords.z
+      z: targetCoords.y, // Using y as z for the state
     });
 
     setShowForm(false);
     setTargetCoords(null);
   };
 
-  // Metrics
-  const resolvedCount = issues.filter(i => i.status === 'resolved').length;
-  const resolutionRate = issues.length ? Math.round((resolvedCount / issues.length) * 100) : 0;
-  const highest = [...issues].sort((a,b) => b.votes - a.votes)[0];
-
   return (
-    <div className="city-map-container fade-in">
-
-      <Canvas shadows camera={{ position: [0, 150, 150], fov: 45 }}>
-        <ambientLight intensity={6.0} color="#ffffff" />
-        <directionalLight 
-          position={[50, 150, 50]} 
-          intensity={8.0} 
-          castShadow 
-          shadow-mapSize={[2048, 2048]}
-        />
-        <directionalLight position={[-50, 50, -50]} intensity={5.0} color="#00d2ff" />
-        
-        <CityModel />
-        <Pins issues={issues} />
-        
-        {/* Invisible ground plane to catch clicks */}
-        <mesh 
-          rotation={[-Math.PI/2, 0, 0]} 
-          position={[0, 0, 0]} 
-          onDoubleClick={handleGroundClick}
+    <div 
+      className="city-map-container fade-in"
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onWheel={handleWheel}
+      ref={mapRef}
+      style={{ cursor: isDragging ? 'grabbing' : 'crosshair' }}
+    >
+      <div 
+        className="svg-layer"
+        style={{
+          transform: `translate(${viewState.x}px, ${viewState.y}px) scale(${viewState.scale})`,
+          transformOrigin: '0 0',
+          transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+        }}
+        onClick={handleMapClick}
+      >
+        <svg 
+          viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+          width={VIEWBOX_WIDTH}
+          height={VIEWBOX_HEIGHT}
+          className="city-svg"
         >
-          <planeGeometry args={[1000, 1000]} />
-          <meshBasicMaterial visible={false} />
-        </mesh>
+          {/* Grid Background */}
+          <defs>
+            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(0,210,255,0.1)" strokeWidth="1"/>
+            </pattern>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <rect width="100%" height="100%" fill="#03050a" />
+          <rect width="100%" height="100%" fill="url(#grid)" />
 
-        <OrbitControls 
-          enableDamping 
-          dampingFactor={0.05} 
-          maxPolarAngle={Math.PI / 2 - 0.05} 
-        />
-        <Environment preset="city" />
-      </Canvas>
+          {/* Zones */}
+          {CITY_ZONES.map(zone => (
+            <g key={zone.id}>
+              <polygon 
+                points={zone.points} 
+                fill={zone.color} 
+                stroke={zone.stroke} 
+                strokeWidth="2"
+                style={{ opacity: 0.4 }}
+                className="zone-polygon"
+              />
+              <text 
+                x={parseInt(zone.points.split(' ')[0].split(',')[0]) + 10} 
+                y={parseInt(zone.points.split(' ')[0].split(',')[1]) + 25} 
+                fill={zone.stroke}
+                className="zone-label"
+              >
+                {zone.name}
+              </text>
+            </g>
+          ))}
+
+          {/* Pins */}
+          {issues.map(issue => (
+            <g 
+              key={issue.id} 
+              transform={`translate(${issue.x}, ${issue.z})`}
+              className="pin-group"
+            >
+              <circle r="12" fill={COLOR_MAP[issue.category]} className="pin-circle" filter="url(#glow)" />
+              <circle r="22" fill={COLOR_MAP[issue.category]} style={{ opacity: 0.15 }} className="pin-pulse" />
+              <text y="-25" textAnchor="middle" className="pin-text">{issue.title}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
 
       {/* Add Issue Form Overlay */}
       {showForm && (
-        <div id="add-issue-form" className="glass slide-in">
-          <h3 style={{ marginBottom: 10, fontSize: '0.9rem', color: '#aaa', textTransform: 'uppercase' }}>
-            Drop a Pin at [{targetCoords.x.toFixed(1)}, {targetCoords.z.toFixed(1)}]
-          </h3>
-          <input ref={titleRef} type="text" placeholder="Describe the issue..." />
+        <div id="add-issue-form" className="glass slide-in" onClick={e => e.stopPropagation()}>
+          <h2 style={{ fontSize: '1rem', color: 'var(--cyan)', marginBottom: '10px' }}>LOG SECTOR REPORT</h2>
+          <p style={{ fontSize: '0.7rem', color: '#8892b0', marginBottom: '15px' }}>
+            SECTOR COORDS: [{Math.round(targetCoords.x)}, {Math.round(targetCoords.y)}]
+          </p>
+          <input ref={titleRef} type="text" placeholder="Describe the issue..." autoFocus />
           <select ref={categoryRef}>
             <option value="infrastructure">Infrastructure</option>
             <option value="sanitation">Sanitation</option>
             <option value="safety">Safety</option>
             <option value="greenery">Greenery</option>
           </select>
-          <button className="glass-btn" onClick={submitIssue} style={{ background: 'var(--cyan)', color: '#000' }}>
-            PIN TO MAP
-          </button>
-          <button className="glass-btn" onClick={() => setShowForm(false)} style={{ marginTop: 5, background: 'transparent' }}>
-            CANCEL
-          </button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <button className="glass-btn" onClick={submitIssue} style={{ background: 'var(--cyan)', color: '#000', flex: 1 }}>
+              PIN TO MAP
+            </button>
+            <button className="glass-btn" onClick={() => setShowForm(false)} style={{ flex: 1, background: 'rgba(255,255,255,0.05)' }}>
+              CANCEL
+            </button>
+          </div>
         </div>
       )}
+
+      <div className="map-legend glass">
+        <div className="legend-item"><span className="dot" style={{ background: '#00d2ff' }}></span> Industrial</div>
+        <div className="legend-item"><span className="dot" style={{ background: '#4caf50' }}></span> Residential</div>
+        <div className="legend-item"><span className="dot" style={{ background: '#ffde00' }}></span> Market</div>
+        <div className="legend-item"><span className="dot" style={{ background: '#ff2a2a' }}></span> Civic</div>
+      </div>
+
+      <div className="map-controls-hint glass">
+        SCROLL TO ZOOM • DRAG TO PAN • CLICK TO PIN
+      </div>
     </div>
   );
 }
-
-useGLTF.preload('/cyberpunk_city_-_1.glb');

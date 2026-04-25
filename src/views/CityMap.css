@@ -3,67 +3,137 @@
   height: 100vh;
   position: relative;
   overflow: hidden;
+  background: #03050a;
+  touch-action: none;
 }
 
+.svg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+}
+
+.city-svg {
+  display: block;
+  user-select: none;
+}
+
+/* Zone Styling */
+.zone-polygon {
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.zone-polygon:hover {
+  opacity: 0.6 !important;
+}
+
+.zone-label {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.8;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Pin Styling */
+.pin-group {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.pin-circle {
+  transition: r 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: pinDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+}
+
+@keyframes pinDrop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pin-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { r: 12; opacity: 0.3; }
+  100% { r: 35; opacity: 0; }
+}
+
+.pin-text {
+  fill: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.pin-group:hover .pin-text {
+  opacity: 1;
+}
+
+/* UI Overlays */
+.map-controls-hint {
+  position: fixed;
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 25px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #8892b0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.map-legend {
+  position: fixed;
+  bottom: 25px;
+  left: 25px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #8892b0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Animations */
 .fade-in {
-  animation: fadeIn 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: fadeIn 0.8s ease-out forwards;
 }
 
 @keyframes fadeIn {
-  0% { opacity: 0; transform: scale(1.05); }
-  100% { opacity: 1; transform: scale(1); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .slide-in {
-  animation: slideIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: slideIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 @keyframes slideIn {
-  0% { opacity: 0; transform: translateY(20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
-
-/* Metric Strip */
-#metric-strip {
-  position: fixed;
-  top: 100px; /* Below the top nav */
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 40px;
-  padding: 15px 40px;
-  z-index: 100;
-  align-items: center;
-}
-.metric {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-}
-.metric-label {
-  font-size: 0.65rem; color: #8892b0; text-transform: uppercase; letter-spacing: 1.5px;
-}
-.metric-value {
-  font-size: 1.4rem; font-weight: 800; text-shadow: 0 0 10px rgba(255,255,255,0.2);
-}
-
-/* Form Overlay */
-#add-issue-form {
-  position: fixed;
-  bottom: 40px; right: 40px;
-  padding: 25px;
-  width: 320px;
-  z-index: 10;
-  display: flex; flex-direction: column; gap: 15px;
-}
-#add-issue-form input, #add-issue-form select {
-  background: rgba(0,0,0,0.5);
-  border: 1px solid var(--glass-border);
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  outline: none;
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
-  font-family: inherit;
-}
-#add-issue-form input:focus { border-color: var(--cyan); }
-#add-issue-form option { background: #03050a; }
