@@ -7,13 +7,13 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 const uuid = () => Math.random().toString(36).substring(2, 9);
 
 const defaultIssues = [
-  { id: uuid(), title: "Subterranean Network Breach", category: "infrastructure", status: "new", votes: 85, coords: {x: 10, y: 0, z: 20}, zone: "Industrial Sector", timestamp: Date.now(), verified: false },
-  { id: uuid(), title: "Hydroponic Array Failure", category: "greenery", status: "new", votes: 45, coords: {x: -25, y: 0, z: -25}, zone: "Market District", timestamp: Date.now(), verified: false },
-  { id: uuid(), title: "Bio-Waste Leakage", category: "sanitation", status: "inprogress", votes: 34, coords: {x: -15, y: 0, z: 5}, zone: "Residential Block", timestamp: Date.now(), verified: false },
+  { id: uuid(), title: "Subterranean Network Breach", category: "infrastructure", status: "new", votes: 85, coords: {x: 10, y: 0, z: 20}, zone: "Industrial Belt", timestamp: Date.now(), verified: false },
+  { id: uuid(), title: "Hydroponic Array Failure", category: "greenery", status: "new", votes: 45, coords: {x: -25, y: 0, z: -25}, zone: "Neon Market", timestamp: Date.now(), verified: false },
+  { id: uuid(), title: "Bio-Waste Leakage", category: "sanitation", status: "inprogress", votes: 34, coords: {x: -15, y: 0, z: 5}, zone: "Civic Core", timestamp: Date.now(), verified: false },
   { id: uuid(), title: "Rogue Drone Activity", category: "safety", status: "resolved", votes: 210, coords: {x: 25, y: 0, z: -10}, zone: "Tech Quarter", timestamp: Date.now(), verified: true },
-  { id: uuid(), title: "Signal Tower Blackout", category: "infrastructure", status: "new", votes: 62, coords: {x: 15, y: 0, z: 15}, zone: "Industrial Sector", timestamp: Date.now(), verified: false },
-  { id: uuid(), title: "Contaminated Water Grid", category: "sanitation", status: "inprogress", votes: 71, coords: {x: -10, y: 0, z: 10}, zone: "Residential Block", timestamp: Date.now(), verified: false },
-  { id: uuid(), title: "Park Sector Overgrowth", category: "greenery", status: "resolved", votes: 38, coords: {x: -20, y: 0, z: -10}, zone: "Market District", timestamp: Date.now(), verified: true }
+  { id: uuid(), title: "Signal Tower Blackout", category: "infrastructure", status: "new", votes: 62, coords: {x: 15, y: 0, z: 15}, zone: "Industrial Belt", timestamp: Date.now(), verified: false },
+  { id: uuid(), title: "Contaminated Water Grid", category: "sanitation", status: "inprogress", votes: 71, coords: {x: -10, y: 0, z: 10}, zone: "Residential Ring", timestamp: Date.now(), verified: false },
+  { id: uuid(), title: "Park Sector Overgrowth", category: "greenery", status: "resolved", votes: 38, coords: {x: -20, y: 0, z: -10}, zone: "Neon Market", timestamp: Date.now(), verified: true }
 ];
 
 let issues = JSON.parse(localStorage.getItem('polis-nexus-3d'));
@@ -26,6 +26,25 @@ const colorMap = {
   sanitation: 0xffeb3b,
   safety: 0xf44336,
   greenery: 0x4caf50
+};
+
+const ZONES = [
+  { name: "Neon Market",     xMin: -Infinity, xMax: -15, zMin: -Infinity, zMax:   0,  color: 0x00bcd4 },
+  { name: "Civic Core",      xMin: -15,  xMax:   0, zMin: -Infinity, zMax:   0,  color: 0x9c27b0 },
+  { name: "Tech Quarter",    xMin:   0,  xMax:  Infinity, zMin: -Infinity, zMax: -10,  color: 0x673ab7 },
+  { name: "Skybridge West",  xMin: -Infinity, xMax: -10, zMin:   0,  zMax:  Infinity,  color: 0x4caf50 },
+  { name: "Residential Ring",xMin: -10,  xMax:  10, zMin:   0,  zMax:  Infinity,  color: 0x8bc34a },
+  { name: "Industrial Belt", xMin:  10,  xMax:  Infinity, zMin:   0,  zMax:  15,  color: 0xff9800 },
+  { name: "Harbor Fringe",   xMin:  10,  xMax:  Infinity, zMin:  15,  zMax:  Infinity,  color: 0xff5722 }
+];
+
+const getZone = (x, z) => {
+  for (let zInfo of ZONES) {
+    if (x >= zInfo.xMin && x < zInfo.xMax && z >= zInfo.zMin && z < zInfo.zMax) {
+      return zInfo;
+    }
+  }
+  return ZONES[1]; // Civic Core
 };
 
 // Elements
@@ -45,13 +64,8 @@ let currentHitPoint = null;
 let currentFilter = 'all';
 const sortModes = { new: 'votes', inprogress: 'votes', resolved: 'votes' };
 
-// Zones
-const getZone = (x, z) => {
-  if (x < 0 && z < 0) return "Market District";
-  if (x >= 0 && z < 0) return "Tech Quarter";
-  if (x < 0 && z >= 0) return "Residential Block";
-  return "Industrial Sector";
-};
+let ghostPin = null;
+let ghostLabel = null;
 
 function init3D() {
   const canvas = document.getElementById('webgl-canvas');
@@ -65,15 +79,16 @@ function init3D() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
-  labelRenderer.domElement.style.position = 'absolute';
+  labelRenderer.domElement.style.position = 'fixed';
   labelRenderer.domElement.style.top = '0px';
+  labelRenderer.domElement.style.left = '0px';
   labelRenderer.domElement.style.pointerEvents = 'none';
   labelRenderer.domElement.style.zIndex = '3';
-  document.getElementById('map-view').appendChild(labelRenderer.domElement);
+  document.body.appendChild(labelRenderer.domElement);
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -129,42 +144,46 @@ function init3D() {
   });
 
   window.addEventListener('resize', onWindowResize);
-  renderer.domElement.addEventListener('click', onMapClick);
+  
+  // Single click removed. Added double click listener.
+  renderer.domElement.addEventListener('dblclick', onMapDoubleClick);
   renderer.domElement.addEventListener('mousemove', onMapHover);
-
-  addIssueForm.style.display = 'none';
 
   animate();
 }
 
 function createZonePlanes() {
-  const zones = [
-    { name: 'Market District', x: -50, z: -50, color: 0x00bcd4 },
-    { name: 'Tech Quarter', x: 50, z: -50, color: 0x9c27b0 },
-    { name: 'Residential Block', x: -50, z: 50, color: 0x4caf50 },
-    { name: 'Industrial Sector', x: 50, z: 50, color: 0xff9800 }
-  ];
+  ZONES.forEach(z => {
+    const wMin = z.xMin === -Infinity ? -100 : z.xMin;
+    const wMax = z.xMax === Infinity ? 100 : z.xMax;
+    const dMin = z.zMin === -Infinity ? -100 : z.zMin;
+    const dMax = z.zMax === Infinity ? 100 : z.zMax;
+    
+    const width = wMax - wMin;
+    const depth = dMax - dMin;
+    const cx = wMin + width/2;
+    const cz = dMin + depth/2;
 
-  zones.forEach(z => {
-    const geo = new THREE.PlaneGeometry(100, 100);
+    const geo = new THREE.PlaneGeometry(width, depth);
     const mat = new THREE.MeshBasicMaterial({ color: z.color, transparent: true, opacity: 0.15, side: THREE.DoubleSide });
     const plane = new THREE.Mesh(geo, mat);
     plane.rotation.x = -Math.PI / 2;
-    plane.position.set(z.x, 0.1, z.z);
+    plane.position.set(cx, 0.1, cz);
+    plane.userData.isZonePlane = true;
     scene.add(plane);
 
     const div = document.createElement('div');
     div.className = 'zone-label';
     div.textContent = z.name;
-    div.style.color = '#' + z.color.toString(16).padStart(6,'0');
+    div.style.color = z.color;
     div.style.fontWeight = '800';
-    div.style.textShadow = '0 0 10px rgba(0,0,0,0.8)';
-    div.style.fontSize = '1.2rem';
+    div.style.fontSize = '1rem';
     div.style.textTransform = 'uppercase';
-    div.style.opacity = '0.7';
+    div.style.opacity = '0.6';
+    div.style.pointerEvents = 'none';
 
     const label = new CSS2DObject(div);
-    label.position.set(z.x, 15, z.z);
+    label.position.set(cx, 10, cz);
     scene.add(label);
   });
 }
@@ -176,20 +195,73 @@ function onWindowResize() {
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function onMapClick(event) {
+function onMapDoubleClick(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   
   raycaster.setFromCamera(mouse, camera);
-  
   let intersects = raycaster.intersectObjects(scene.children, true);
-  // Filter out zones and halos
-  intersects = intersects.filter(i => !i.object.userData.isHalo && !i.object.userData.isZonePlane);
+  intersects = intersects.filter(i => !i.object.userData.isHalo && !i.object.userData.isZonePlane && i.object !== ghostPin);
 
   if (intersects.length > 0) {
     currentHitPoint = intersects[0].point;
-    addIssueForm.style.display = 'flex';
+    const zoneInfo = getZone(currentHitPoint.x, currentHitPoint.z);
+    
+    // Create or update ghost pin
+    if (!ghostPin) {
+      ghostPin = new THREE.Group();
+      
+      const shaftGeo = new THREE.CylinderGeometry(0.2, 0.2, 12);
+      const shaftMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+      const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+      shaft.position.y = 6;
+      ghostPin.add(shaft);
+
+      const orbGeo = new THREE.SphereGeometry(3, 16, 16);
+      const orbMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
+      const orb = new THREE.Mesh(orbGeo, orbMat);
+      orb.position.y = 12;
+      ghostPin.add(orb);
+      
+      scene.add(ghostPin);
+    }
+    ghostPin.position.set(currentHitPoint.x, 0, currentHitPoint.z);
+
+    // Create or update ghost label
+    if (!ghostLabel) {
+      const div = document.createElement('div');
+      div.className = 'ghost-zone-label';
+      ghostLabel = new CSS2DObject(div);
+      scene.add(ghostLabel);
+    }
+    ghostLabel.element.innerText = zoneInfo.name;
+    ghostLabel.position.set(currentHitPoint.x, 5, currentHitPoint.z);
+
+    // Enable form
+    addIssueForm.classList.remove('inactive-form');
+    document.getElementById('issue-title').disabled = false;
+    document.getElementById('issue-category').disabled = false;
+    document.getElementById('submit-issue').disabled = false;
+    document.getElementById('cancel-issue').disabled = false;
+
+    const formZone = document.getElementById('form-zone-name');
+    formZone.innerText = `📍 ${zoneInfo.name}`;
+    formZone.style.color = '#' + zoneInfo.color.toString(16).padStart(6, '0');
   }
+}
+
+function clearGhostPin() {
+  addIssueForm.classList.add('inactive-form');
+  document.getElementById('issue-title').disabled = true;
+  document.getElementById('issue-category').disabled = true;
+  document.getElementById('submit-issue').disabled = true;
+  document.getElementById('cancel-issue').disabled = true;
+  document.getElementById('issue-title').value = '';
+  document.getElementById('form-zone-name').innerText = '';
+  
+  if (ghostPin) { scene.remove(ghostPin); ghostPin = null; }
+  if (ghostLabel) { scene.remove(ghostLabel); ghostLabel = null; }
+  currentHitPoint = null;
 }
 
 function onMapHover(event) {
@@ -201,7 +273,6 @@ function onMapHover(event) {
   const intersects = raycaster.intersectObjects(pinGroup.children, true);
   if (intersects.length > 0) {
     const obj = intersects[0].object;
-    // Find parent pin group
     let pin = obj;
     while(pin.parent && pin.parent !== pinGroup) pin = pin.parent;
     
@@ -243,8 +314,13 @@ function render3DPins() {
       emissiveIntensity: 0.8 
     });
     const orb = new THREE.Mesh(orbGeo, orbMat);
-    orb.position.y = 0.5;
+    orb.position.y = 12;
     
+    const shaftGeo = new THREE.CylinderGeometry(0.2, 0.2, 12);
+    const shaftMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+    const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+    shaft.position.y = 6;
+
     const haloGeo = new THREE.RingGeometry(1, 4, 32);
     const haloMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
     const halo = new THREE.Mesh(haloGeo, haloMat);
@@ -254,9 +330,10 @@ function render3DPins() {
     
     const pin = new THREE.Group();
     pin.add(orb);
+    pin.add(shaft);
     pin.add(halo);
     
-    pin.position.set(issue.coords.x, issue.coords.y, issue.coords.z);
+    pin.position.set(issue.coords.x, 0, issue.coords.z);
     pin.userData = { isPin: true, issue: issue, phase: Math.random() * Math.PI * 2 };
     
     pinGroup.add(pin);
@@ -276,6 +353,11 @@ function animate() {
       halo.material.opacity = 0.5 - (0.2 * Math.sin(time + pin.userData.phase));
     }
   });
+
+  if (ghostPin) {
+    const scale = 1 + 0.1 * Math.sin(time * 2);
+    ghostPin.children[1].scale.set(scale, scale, scale); // orb
+  }
   
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
@@ -420,7 +502,6 @@ function updateMetrics() {
   const rate = issues.length ? Math.round((resolved / issues.length) * 100) : 0;
   document.getElementById('metric-rate').innerText = `${rate}%`;
   
-  // Calculate highest density zone
   const zoneCounts = {};
   issues.forEach(i => { zoneCounts[i.zone] = (zoneCounts[i.zone] || 0) + 1; });
   let topZone = 'NONE';
@@ -446,6 +527,7 @@ function initApp() {
     isKanban = !isKanban;
     flipContainer.style.transform = isKanban ? 'rotateY(180deg)' : 'rotateY(0deg)';
     toggleBtn.innerText = isKanban ? 'Switch to Map View' : 'Switch to Kanban';
+    labelRenderer.domElement.style.display = isKanban ? 'none' : 'block';
   });
   
   document.getElementById('submit-issue').addEventListener('click', () => {
@@ -455,19 +537,21 @@ function initApp() {
     
     const x = currentHitPoint.x;
     const z = currentHitPoint.z;
-    const zone = getZone(x, z);
+    const zoneInfo = getZone(x, z);
 
     issues.push({
       id: uuid(), title, category, status: 'new', votes: 1, 
       coords: { x, y: currentHitPoint.y, z },
-      zone: zone, timestamp: Date.now(), verified: false
+      zone: zoneInfo.name, timestamp: Date.now(), verified: false
     });
     
     saveState();
+    clearGhostPin();
     updateUI();
-    document.getElementById('issue-title').value = '';
-    addIssueForm.style.display = 'none';
-    currentHitPoint = null;
+  });
+
+  document.getElementById('cancel-issue').addEventListener('click', () => {
+    clearGhostPin();
   });
   
   updateUI();

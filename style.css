@@ -128,6 +128,28 @@ body {
   width: 320px;
   z-index: 10;
   display: flex; flex-direction: column; gap: 15px;
+  transition: opacity 0.3s ease;
+}
+#add-issue-form.inactive-form {
+  opacity: 0.4;
+  pointer-events: none;
+}
+#add-issue-form:not(.inactive-form) .form-helper-text {
+  display: none;
+}
+.form-helper-text {
+  font-size: 0.8rem;
+  color: #8892b0;
+  text-align: center;
+  margin-bottom: 5px;
+}
+.ghost-zone-label {
+  font-size: 11px;
+  color: white;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 8px;
+  border-radius: 4px;
+  opacity: 0.75;
 }
 #add-issue-form input, #add-issue-form select {
   background: rgba(0,0,0,0.5);
@@ -174,6 +196,11 @@ body {
 .kanban-board {
   display: flex; gap: 40px; width: 100%; max-width: 1400px; height: 100%;
 }
+@media (max-width: 768px) {
+  .kanban-board {
+    flex-direction: column;
+  }
+}
 .kanban-column {
   flex: 1;
   background: rgba(10, 14, 20, 0.5);
@@ -185,9 +212,9 @@ body {
   box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
 }
 .kanban-header {
-  font-size: 1.1rem; font-weight: 800; text-transform: uppercase;
+  font-size: 15px; font-weight: 800; text-transform: uppercase;
   margin-bottom: 25px;
-  letter-spacing: 2px;
+  letter-spacing: 0.08em;
   color: #8892b0;
   text-align: center;
   border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -200,12 +227,20 @@ body {
 }
 .kanban-cards::-webkit-scrollbar { display: none; }
 
+.empty-placeholder::before {
+  content: '🏙️';
+  font-size: 2rem;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
 .card {
   position: relative;
   background: rgba(20, 25, 35, 0.8);
   border: 1px solid rgba(0, 210, 255, 0.2);
   border-left: 4px solid var(--card-color, #fff);
-  padding: 20px;
+  padding: 16px 20px;
+  min-height: 100px;
   border-radius: 12px;
   cursor: grab;
   user-select: none;
@@ -221,13 +256,15 @@ body {
 .card:active { cursor: grabbing; }
 
 .card-title { font-weight: 600; font-size: 1.1rem; margin-bottom: 15px; line-height: 1.4; }
-.card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #8892b0; }
+.card-meta { display: flex; justify-content: space-between; align-items: center; color: #8892b0; }
+.card-meta span { font-size: 13px; }
 
 .upvote-btn {
   background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); color: #fff;
   border-radius: 20px; padding: 6px 12px; cursor: pointer;
-  display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
   font-weight: 600;
+  min-width: 44px; height: 28px; font-size: 14px;
 }
 .upvote-btn:hover { background: rgba(0, 210, 255, 0.2); transform: scale(1.05); }
 
