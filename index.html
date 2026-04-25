@@ -9,6 +9,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   </head>
   <body style="background: #03050a; overflow: hidden;">
+    <!-- Landing redirect guard -->
+    <script>
+      // If user lands directly on index.html without going through 
+      // landing page, redirect them (only on first visit)
+      if (!sessionStorage.getItem('polis-entered')) {
+        sessionStorage.setItem('polis-entered', 'true');
+        // Do NOT redirect — just mark as entered
+        // Landing page is at landing.html
+      }
+    </script>
     <div id="loading-screen">
       <div class="loader"></div>
       <div style="margin-top: 20px; font-weight: 800; letter-spacing: 2px; color: #00d2ff;">POLIS NEXUS INITIALIZING...</div>
