@@ -533,6 +533,7 @@ function renderKanban() {
         
         menuBtn.addEventListener('click', (e) => {
           e.stopPropagation();
+          console.log(`[KANBAN] 3-dot menu clicked for issue ${issue.id}`);
           const isShowing = dropdown.classList.contains('show');
           document.querySelectorAll('.card-dropdown').forEach(d => d.classList.remove('show'));
           if (!isShowing) dropdown.classList.add('show');
@@ -542,6 +543,7 @@ function renderKanban() {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const action = btn.dataset.action;
+            console.log(`[KANBAN] Dropdown action '${action}' clicked for issue ${issue.id}`);
             if (action === 'delete') {
               issues = issues.filter(i => i.id !== issue.id);
             } else {
@@ -553,6 +555,11 @@ function renderKanban() {
             saveState();
             updateUI();
           });
+        });
+        
+        // Also log card clicks
+        card.addEventListener('click', (e) => {
+          console.log(`[KANBAN] Card clicked: ${issue.id}`);
         });
         
         card.appendChild(menuBtn);
