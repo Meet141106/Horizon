@@ -55,22 +55,50 @@
         </div>
 
         <!-- Kanban Board View -->
-        <div id="kanban-view" class="face face-back">
+        <div id="kanban-view" class="face face-back" style="flex-direction: column;">
+          <div id="filter-bar" style="display:flex; gap:10px; justify-content:center; margin-bottom: 20px; width: 100%; max-width: 1400px;">
+            <button class="glass-btn filter-btn" data-filter="all" style="border-color: #fff">All</button>
+            <button class="glass-btn filter-btn" data-filter="infrastructure" style="border-color: var(--c-infrastructure)">Infrastructure</button>
+            <button class="glass-btn filter-btn" data-filter="sanitation" style="border-color: var(--c-sanitation)">Sanitation</button>
+            <button class="glass-btn filter-btn" data-filter="safety" style="border-color: var(--c-safety)">Safety</button>
+            <button class="glass-btn filter-btn" data-filter="greenery" style="border-color: var(--c-greenery)">Greenery</button>
+          </div>
           <div class="kanban-board">
-            <div class="kanban-column" data-status="new">
-              <div class="kanban-header">New Reports</div>
+            <div class="kanban-column" data-status="new" style="border-top: 3px solid var(--c-infrastructure);">
+              <div class="kanban-header">
+                <div style="display:flex; justify-content: space-between; align-items:center; font-size: 0.9rem;">
+                  <span>New Reports <span class="count-badge">(0)</span></span>
+                  <button class="sort-btn glass-btn" data-sort="votes" style="padding: 4px 8px; font-size: 0.7rem;">▲ Votes</button>
+                </div>
+              </div>
               <div class="kanban-cards"></div>
+              <div class="kanban-footer" style="text-align: center; color: #8892b0; font-size: 0.8rem; margin-top: 15px;">Avg upvotes: <span class="avg-upvotes">0</span></div>
             </div>
-            <div class="kanban-column" data-status="in-progress">
-              <div class="kanban-header">In Progress</div>
+            <div class="kanban-column" data-status="inprogress" style="border-top: 3px solid var(--c-sanitation);">
+              <div class="kanban-header">
+                <div style="display:flex; justify-content: space-between; align-items:center; font-size: 0.9rem;">
+                  <span>In Progress <span class="count-badge">(0)</span></span>
+                  <button class="sort-btn glass-btn" data-sort="votes" style="padding: 4px 8px; font-size: 0.7rem;">▲ Votes</button>
+                </div>
+              </div>
               <div class="kanban-cards"></div>
+              <div class="kanban-footer" style="text-align: center; color: #8892b0; font-size: 0.8rem; margin-top: 15px;">Avg upvotes: <span class="avg-upvotes">0</span></div>
             </div>
-            <div class="kanban-column" data-status="resolved">
-              <div class="kanban-header">Resolved</div>
+            <div class="kanban-column" data-status="resolved" style="border-top: 3px solid var(--c-greenery);">
+              <div class="kanban-header">
+                <div style="display:flex; justify-content: space-between; align-items:center; font-size: 0.9rem;">
+                  <span>Resolved <span class="count-badge">(0)</span></span>
+                  <button class="sort-btn glass-btn" data-sort="votes" style="padding: 4px 8px; font-size: 0.7rem;">▲ Votes</button>
+                </div>
+              </div>
               <div class="kanban-cards"></div>
+              <div class="kanban-footer" style="text-align: center; color: #8892b0; font-size: 0.8rem; margin-top: 15px;">Avg upvotes: <span class="avg-upvotes">0</span></div>
             </div>
           </div>
         </div>
+
+        <div id="tooltip" class="glass hidden" style="position: absolute; pointer-events: none; z-index: 1000; padding: 10px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 5px;"></div>
+
 
       </div>
     </div>

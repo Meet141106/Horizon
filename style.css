@@ -156,6 +156,20 @@ body {
   pointer-events: none;
 }
 
+#tooltip.hidden {
+  opacity: 0;
+}
+
+.empty-placeholder {
+  color: #8892b0;
+  text-align: center;
+  padding: 20px;
+  font-size: 0.9rem;
+  font-style: italic;
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 8px;
+}
+
 /* Kanban */
 .kanban-board {
   display: flex; gap: 40px; width: 100%; max-width: 1400px; height: 100%;
@@ -195,7 +209,10 @@ body {
   border-radius: 12px;
   cursor: grab;
   user-select: none;
-  transition: box-shadow 0.2s ease, transform 0.1s ease-out, filter 0.2s; 
+  transition: box-shadow 0.2s ease, transform 0.1s ease-out, filter 0.2s, top 0.3s ease, left 0.3s ease; 
+}
+.card.faint-green {
+  background: rgba(0, 255, 102, 0.05);
 }
 .card:hover {
   background: rgba(30, 35, 45, 0.9);
