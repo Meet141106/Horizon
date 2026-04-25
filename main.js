@@ -198,17 +198,16 @@ function init3D() {
 }
 
 function createZonePlanes() {
-  // Zone overlay planes — use the ZONES boundary data (unchanged)
   ZONES.forEach(z => {
     const wMin = z.xMin === -Infinity ? -100 : z.xMin;
     const wMax = z.xMax === Infinity ? 100 : z.xMax;
     const dMin = z.zMin === -Infinity ? -100 : z.zMin;
     const dMax = z.zMax === Infinity ? 100 : z.zMax;
-
+    
     const width = wMax - wMin;
     const depth = dMax - dMin;
-    const cx = wMin + width / 2;
-    const cz = dMin + depth / 2;
+    const cx = wMin + width/2;
+    const cz = dMin + depth/2;
 
     const geo = new THREE.PlaneGeometry(width, depth);
     const mat = new THREE.MeshBasicMaterial({ color: z.color, transparent: true, opacity: 0.15, side: THREE.DoubleSide });
@@ -217,35 +216,19 @@ function createZonePlanes() {
     plane.position.set(cx, 0.1, cz);
     plane.userData.isZonePlane = true;
     scene.add(plane);
-  });
 
-  // Zone labels — manually tuned world-space positions
-  const ZONE_LABELS = [
-    { name: "Neon Market",      x: -18, y: 4, z: -12, color: "#00bcd4" },
-    { name: "Civic Core",       x:  -4, y: 4, z:  -6, color: "#9c27b0" },
-    { name: "Tech Quarter",     x:  10, y: 4, z: -14, color: "#673ab7" },
-    { name: "Skybridge West",   x: -14, y: 4, z:   6, color: "#4caf50" },
-    { name: "Residential Ring", x:   0, y: 4, z:   8, color: "#8bc34a" },
-    { name: "Industrial Belt",  x:  10, y: 4, z:   6, color: "#ff9800" },
-    { name: "Harbor Fringe",    x:  16, y: 4, z:  14, color: "#ff5722" },
-  ];
-
-  ZONE_LABELS.forEach(z => {
     const div = document.createElement('div');
     div.className = 'zone-label';
     div.textContent = z.name;
-    div.style.color = z.color;
-    div.style.fontWeight = '600';
+    div.style.color = '#' + z.color.toString(16).padStart(6, '0');
+    div.style.fontWeight = '800';
     div.style.fontSize = window.innerWidth <= 480 ? '9px' : '11px';
     div.style.textTransform = 'uppercase';
-    div.style.letterSpacing = '0.12em';
-    div.style.textShadow = `0 0 8px ${z.color}`;
-    div.style.opacity = '0.85';
+    div.style.opacity = '0.6';
     div.style.pointerEvents = 'none';
-    div.style.whiteSpace = 'nowrap';
 
     const label = new CSS2DObject(div);
-    label.position.set(z.x, z.y, z.z);
+    label.position.set(cx, 10, cz);
     scene.add(label);
   });
 }
@@ -480,17 +463,6 @@ function animate() {
   if (labelRenderer && scene && camera) labelRenderer.render(scene, camera);
 }
 
-// Kanban card tooltip — lives on body, outside the flipped container
-function getCardTooltip() {
-  let tt = document.getElementById('card-tooltip');
-  if (!tt) {
-    tt = document.createElement('div');
-    tt.id = 'card-tooltip';
-    tt.className = 'card-tooltip';
-    document.body.appendChild(tt);
-  }
-  return tt;
-}
 
 function renderKanban() {
   const statuses = ['new', 'inprogress', 'resolved'];
@@ -554,27 +526,6 @@ function renderKanban() {
           }
         }
         
-        // Card hover tooltip — appended to body so rotateY(180deg) doesn't flip it
-        card.addEventListener('mouseenter', () => {
-          const tt = getCardTooltip();
-          tt.innerHTML = `<div>${issue.title}</div><div style="color:${colorHex};margin-top:2px">${issue.category.toUpperCase()}</div><div style="color:#8892b0;margin-top:2px">Votes: ${issue.votes}</div>`;
-          // Position above card, centered
-          const rect = card.getBoundingClientRect();
-          tt.style.opacity = '0'; // brief hide so we can measure
-          tt.style.visibility = 'visible';
-          requestAnimationFrame(() => {
-            const ttH = tt.offsetHeight;
-            const top = rect.top < 80 ? rect.bottom + 8 : rect.top - ttH - 8;
-            tt.style.top = top + 'px';
-            tt.style.left = (rect.left + rect.width / 2) + 'px';
-            tt.style.opacity = '1';
-          });
-        });
-        card.addEventListener('mouseleave', () => {
-          const tt = getCardTooltip();
-          tt.style.opacity = '0';
-        });
-
         // Card click — expand to show action buttons
         card.addEventListener('click', (e) => {
           e.stopPropagation(); // BUG 1 — stop bubbling to map layer
