@@ -430,6 +430,43 @@ body {
 }
 .card:active { cursor: grabbing; }
 
+/* BUG 2B — Card expand on click */
+.card-actions {
+  display: none;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.card.card-expanded {
+  border-color: rgba(255,255,255,0.4) !important;
+  cursor: default;
+}
+.card.card-expanded .card-actions {
+  display: flex;
+}
+.card-action-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: background 0.2s;
+}
+.card-action-btn:hover { background: rgba(255,255,255,0.18); }
+.card-action-btn.move-btn { border-color: #00e5ff; color: #00e5ff; }
+.card-action-btn.resolve-btn { border-color: #4caf50; color: #4caf50; }
+
+/* BUG 3 — Filter pill active override */
+.filter-pill.active {
+  opacity: 1 !important;
+  background: rgba(255,255,255,0.12) !important;
+}
+
+
 
 .card-title { font-weight: 600; font-size: 1.1rem; margin-bottom: 15px; line-height: 1.4; }
 .card-meta { display: flex; justify-content: space-between; align-items: center; color: #8892b0; }

@@ -71,6 +71,9 @@ const toggleBtn = document.getElementById('toggle-view-btn');
 const addIssueForm = document.getElementById('add-issue-form');
 const tooltip = document.getElementById('tooltip');
 
+// View state — tracks whether kanban is showing so toast is suppressed
+let isKanbanActive = false;
+
 // Three.js Globals
 let scene, camera, renderer, labelRenderer, controls;
 let pinGroup = new THREE.Group();
@@ -322,12 +325,14 @@ function onMapDoubleClick(event) {
 }
 
 function showToast(msg) {
+  // BUG 1 — Never show map toast while kanban is active
+  if (isKanbanActive) return;
   const existing = document.getElementById('polis-toast');
   if (existing) existing.remove();
   const toast = document.createElement('div');
   toast.id = 'polis-toast';
   toast.innerText = msg;
-  toast.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(255,80,80,0.9);color:white;padding:10px 20px;border-radius:8px;z-index:9999;font-weight:600;font-size:0.9rem;box-shadow:0 5px 15px rgba(0,0,0,0.3);animation:slide-up 0.3s ease-out;`;
+  toast.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(255,80,80,0.9);color:white;padding:10px 20px;border-radius:8px;z-index:9999;font-weight:600;font-size:0.9rem;box-shadow:0 5px 15px rgba(0,0,0,0.3);`;
   document.body.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
@@ -489,13 +494,25 @@ function renderKanban() {
       colIssues.forEach(issue => {
         totalVotes += issue.votes;
         const card = document.createElement('div');
-        card.className = `card ${issue.status === 'resolved' ? 'faint-green' : ''} ${issue.verified ? 'resolved-badge' : ''}`;
+        card.className = `card issue-card ${issue.status === 'resolved' ? 'faint-green' : ''} ${issue.verified ? 'resolved-badge' : ''}`;
         const colorHex = '#' + colorMap[issue.category].toString(16).padStart(6, '0');
         card.style.setProperty('--card-color', colorHex);
         card.draggable = true;
         card.dataset.id = issue.id;
         
         card.innerHTML = `<div class="card-title">${issue.title}</div><div class="card-meta"><span style="text-transform:capitalize;color:var(--card-color);font-size:13px;">${issue.category}</span><button class="upvote-btn" data-id="${issue.id}">▲ ${issue.votes}</button></div>`;
+        
+        // BUG 2B — Card click actions area
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'card-actions';
+        if (issue.status === 'new') {
+          actionsDiv.innerHTML = `<button class="card-action-btn move-btn" data-target="inprogress">→ Move to In Progress</button><button class="card-action-btn cancel-btn">✕ Cancel</button>`;
+        } else if (issue.status === 'inprogress') {
+          actionsDiv.innerHTML = `<button class="card-action-btn resolve-btn" data-target="resolved">→ Move to Resolved</button><button class="card-action-btn cancel-btn">✕ Cancel</button>`;
+        } else {
+          actionsDiv.innerHTML = `<button class="card-action-btn cancel-btn">✕ Close</button>`;
+        }
+        card.appendChild(actionsDiv);
         
         if (issue.status === 'resolved') {
           for(let i=0; i<3; i++) {
@@ -507,6 +524,34 @@ function renderKanban() {
             card.appendChild(p);
           }
         }
+        
+        // Card click — expand to show action buttons
+        card.addEventListener('click', (e) => {
+          e.stopPropagation(); // BUG 1 — stop bubbling to map layer
+          if (e.target.classList.contains('upvote-btn')) return;
+          if (e.target.classList.contains('card-action-btn')) return;
+          document.querySelectorAll('.issue-card.card-expanded').forEach(c => c.classList.remove('card-expanded'));
+          card.classList.add('card-expanded');
+        });
+        
+        // Move button handlers
+        actionsDiv.querySelectorAll('.card-action-btn[data-target]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newStatus = btn.dataset.target;
+            issue.status = newStatus;
+            if (newStatus === 'resolved') {
+              setTimeout(() => { issue.verified = true; saveState(); updateUI(); }, 2000);
+            }
+            saveState();
+            updateUI();
+          });
+        });
+        // Cancel/close button
+        actionsDiv.querySelector('.cancel-btn')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          card.classList.remove('card-expanded');
+        });
         
         card.addEventListener('dragstart', handleDragStart);
         card.addEventListener('dragend', handleDragEnd);
@@ -560,7 +605,31 @@ function renderKanban() {
     col.querySelector('.avg-upvotes').innerText = avg;
   });
   initMobileTabs();
+  attachFilterListeners(); // BUG 3 — re-attach after every DOM rebuild
 }
+
+// BUG 3 — Dedicated filter listener attachment
+function attachFilterListeners() {
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    // Clone to remove any stale listeners before re-attaching
+    const fresh = pill.cloneNode(true);
+    pill.parentNode.replaceChild(fresh, pill);
+    fresh.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activeFilter = fresh.dataset.category || 'all';
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      fresh.classList.add('active');
+      renderKanban();
+    });
+  });
+}
+
+// BUG 1 — Collapse expanded cards when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.issue-card')) {
+    document.querySelectorAll('.issue-card.card-expanded').forEach(c => c.classList.remove('card-expanded'));
+  }
+});
 
 function initMobileTabs() {
   if (window.innerWidth > 480) {
@@ -630,18 +699,6 @@ function initKanbanDrag() {
       }
     });
   });
-  // Filters
-  document.querySelectorAll('.filter-pill').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      activeFilter = e.currentTarget.dataset.category;
-      
-      // Toggle active class
-      document.querySelectorAll('.filter-pill').forEach(pill => pill.classList.remove('active'));
-      e.currentTarget.classList.add('active');
-      
-      updateUI();
-    });
-  });
   document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const col = e.target.closest('.kanban-column');
@@ -651,6 +708,7 @@ function initKanbanDrag() {
       scheduleKanban();
     });
   });
+  attachFilterListeners(); // initial attach on page load
 }
 
 function updateMetrics() {
@@ -676,12 +734,13 @@ function initApp() {
   init3D();
   initKanbanDrag();
   mapView.addEventListener('scroll', handleScroll);
-  let isKanban = false;
   toggleBtn.addEventListener('click', () => {
-    isKanban = !isKanban;
-    flipContainer.style.transform = isKanban ? 'rotateY(180deg)' : 'rotateY(0deg)';
-    toggleBtn.innerText = isKanban ? 'Switch to Map View' : 'Switch to Kanban';
-    labelRenderer.domElement.style.display = isKanban ? 'none' : 'block';
+    isKanbanActive = !isKanbanActive;
+    flipContainer.style.transform = isKanbanActive ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    toggleBtn.innerText = isKanbanActive ? 'Switch to Map View' : 'Switch to Kanban';
+    labelRenderer.domElement.style.display = isKanbanActive ? 'none' : 'block';
+    // BUG 2A — allow page to scroll in kanban, lock it on map
+    document.body.style.overflow = isKanbanActive ? 'auto' : 'hidden';
   });
   
   document.getElementById('submit-issue').addEventListener('click', () => {
