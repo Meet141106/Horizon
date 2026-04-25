@@ -835,11 +835,15 @@ let lastMouseX = 0;
 
 function handleDragStart(e) {
   draggedCard = this;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.id || '');
+  }
   setTimeout(() => this.style.opacity = '0.4', 0);
   lastMouseX = e.clientX;
 }
 
-function handleDragEnd() {
+function handleDragEnd(e) {
   this.style.opacity = '1';
   this.style.transform = 'rotate(0deg)';
   draggedCard = null;
@@ -849,6 +853,9 @@ function initKanbanDrag() {
   document.querySelectorAll('.kanban-column').forEach(col => {
     col.addEventListener('dragover', (e) => {
       e.preventDefault();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'move';
+      }
       if (draggedCard) {
         const deltaX = e.clientX - lastMouseX;
         lastMouseX = e.clientX;
