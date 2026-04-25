@@ -531,9 +531,9 @@ function renderKanban() {
         menuHtml += `<button class="card-dropdown-item delete-item" data-action="delete">Delete Issue</button>`;
         dropdown.innerHTML = menuHtml;
         
-        menuBtn.addEventListener('mousedown', (e) => {
-          e.stopPropagation(); // Prevent native drag-and-drop from hijacking the click
-        });
+        // Prevent native drag from hijacking clicks
+        menuBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+        dropdown.addEventListener('mousedown', (e) => e.stopPropagation());
         
         menuBtn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -597,7 +597,9 @@ function renderKanban() {
 
         card.addEventListener('touchmove', e => {
           if (!clone) return;
-          e.preventDefault();
+          if (e.cancelable) {
+            e.preventDefault();
+          }
           clone.style.left = (e.touches[0].clientX - card.offsetWidth/2) + 'px';
           clone.style.top  = (e.touches[0].clientY - 30) + 'px';
         }, { passive: false });
@@ -779,6 +781,7 @@ function initApp() {
     flipContainer.style.transform = isKanbanActive ? 'rotateY(180deg)' : 'rotateY(0deg)';
     toggleBtn.innerText = isKanbanActive ? 'Switch to Map View' : 'Switch to Kanban';
     labelRenderer.domElement.style.display = isKanbanActive ? 'none' : 'block';
+    document.getElementById('map-view').style.pointerEvents = isKanbanActive ? 'none' : 'auto';
     // BUG 2A — allow page to scroll in kanban, lock it on map
     document.body.style.overflow = isKanbanActive ? 'auto' : 'hidden';
   });
