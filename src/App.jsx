@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import TopNav from './components/TopNav.jsx';
-import LandingPage from './landing/LandingPage.jsx';
 import CityMapView from './views/CityMapView.jsx';
 import KanbanView from './views/KanbanView.jsx';
 
@@ -12,13 +11,12 @@ import KanbanView from './views/KanbanView.jsx';
 */
 
 export default function App() {
-  const [view, setView] = useState('landing');
+  const [view, setView] = useState('map');
 
   return (
     <>
       <TopNav currentView={view} onNavigate={setView} />
 
-      {view === 'landing' && <LandingPage onEnter={() => setView('map')} />}
       {view === 'map'     && <CityMapView />}
       {view === 'kanban'  && <KanbanView />}
     </>
