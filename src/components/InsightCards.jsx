@@ -44,6 +44,7 @@ export default function InsightCards() {
   };
 
   const formatText = (text) => {
+    if (!text) return null;
     return text.split(/(₹[\d,]+(?:\.\d+)?[A-Za-z]*)/g).map((part, i) => {
       if (part.startsWith('₹')) {
         return <span key={i} style={{ fontFamily: 'var(--font-mono)', color: 'var(--teal)', fontSize: '18px', fontWeight: 500 }}>{part}</span>;
@@ -71,7 +72,7 @@ export default function InsightCards() {
           </div>
           <div>
             <p style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.5 }}>
-              {formatText(insight.message)}
+              {formatText(insight.text)}
             </p>
           </div>
         </div>
