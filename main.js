@@ -46,13 +46,13 @@ const colorMap = {
 };
 
 const ZONES = [
-  { name: "Neon Market",     xMin: -Infinity, xMax: -15, zMin: -Infinity, zMax:   0,  color: 0x00bcd4 },
-  { name: "Civic Core",      xMin: -15,  xMax:   0, zMin: -Infinity, zMax:   0,  color: 0x9c27b0 },
-  { name: "Tech Quarter",    xMin:   0,  xMax:  Infinity, zMin: -Infinity, zMax: -10,  color: 0x673ab7 },
-  { name: "Skybridge West",  xMin: -Infinity, xMax: -10, zMin:   0,  zMax:  Infinity,  color: 0x4caf50 },
-  { name: "Residential Ring",xMin: -10,  xMax:  10, zMin:   0,  zMax:  Infinity,  color: 0x8bc34a },
-  { name: "Industrial Belt", xMin:  10,  xMax:  Infinity, zMin:   0,  zMax:  15,  color: 0xff9800 },
-  { name: "Harbor Fringe",   xMin:  10,  xMax:  Infinity, zMin:  15,  zMax:  Infinity,  color: 0xff5722 }
+  { name: "Neon Market",     xMin: -Infinity, xMax: -15, zMin: -Infinity, zMax:   0,  color: 0x00bcd4, lx: -22, lz: -18 },
+  { name: "Civic Core",      xMin: -15,  xMax:   0, zMin: -Infinity, zMax:   0,  color: 0x9c27b0, lx:  -8, lz:  -8 },
+  { name: "Tech Quarter",    xMin:   0,  xMax:  Infinity, zMin: -Infinity, zMax: -10,  color: 0x673ab7, lx:  22, lz: -14 },
+  { name: "Skybridge West",  xMin: -Infinity, xMax: -10, zMin:   0,  zMax:  Infinity,  color: 0x4caf50, lx: -22, lz:  18 },
+  { name: "Residential Ring",xMin: -10,  xMax:  10, zMin:   0,  zMax:  Infinity,  color: 0x8bc34a, lx:   0, lz:  14 },
+  { name: "Industrial Belt", xMin:  10,  xMax:  Infinity, zMin:   0,  zMax:  15,  color: 0xff9800, lx:  18, lz:   8 },
+  { name: "Harbor Fringe",   xMin:  10,  xMax:  Infinity, zMin:  15,  zMax:  Infinity,  color: 0xff5722, lx:  20, lz:  24 }
 ];
 
 const getZone = (x, z) => {
@@ -228,7 +228,10 @@ function createZonePlanes() {
     div.style.pointerEvents = 'none';
 
     const label = new CSS2DObject(div);
-    label.position.set(cx, 10, cz);
+    // Use explicit label position if defined, otherwise fall back to zone centroid
+    const lx = z.lx !== undefined ? z.lx : cx;
+    const lz = z.lz !== undefined ? z.lz : cz;
+    label.position.set(lx, 10, lz);
     scene.add(label);
   });
 }
