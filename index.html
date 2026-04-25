@@ -103,43 +103,46 @@
         <div style="margin-top: 20px; font-weight: 800; letter-spacing: 2px; color: #00d2ff;">URBANLENS INITIALIZING...</div>
       </div>
 
-      <!-- Top Nav / Metric Strip -->
-      <div id="metric-strip" class="glass" style="display: none;">
-        <div class="app-brand">
-          <svg viewBox="0 0 24 24" width="20" height="20" 
-               xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="10" fill="none" 
-                    stroke="#00d2ff" stroke-width="1.2"/>
-            <circle cx="12" cy="12" r="5" fill="none" 
-                    stroke="#00d2ff" stroke-width="1.2"/>
-            <circle cx="12" cy="12" r="1.5" fill="#00d2ff"/>
-            <line x1="12" y1="2" x2="12" y2="7" 
-                  stroke="#00d2ff" stroke-width="1.2"/>
-            <line x1="12" y1="17" x2="12" y2="22" 
-                  stroke="#00d2ff" stroke-width="1.2"/>
-            <line x1="2" y1="12" x2="7" y2="12" 
-                  stroke="#00d2ff" stroke-width="1.2"/>
-            <line x1="17" y1="12" x2="22" y2="12" 
-                  stroke="#00d2ff" stroke-width="1.2"/>
-          </svg>
-          <span class="app-brand-name">
-            <span style="color:#fff">URBAN</span><span style="color:#00d2ff">LENS</span>
-          </span>
+      <!-- Main Navigation -->
+      <nav id="main-nav" class="glass" style="display: none;">
+        <div class="nav-left">
+          <div class="app-brand">
+            <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" fill="none" stroke="#00d2ff" stroke-width="1.2"/>
+              <circle cx="12" cy="12" r="5" fill="none" stroke="#00d2ff" stroke-width="1.2"/>
+              <circle cx="12" cy="12" r="1.5" fill="#00d2ff"/>
+              <line x1="12" y1="2" x2="12" y2="7" stroke="#00d2ff" stroke-width="1.2"/>
+              <line x1="12" y1="17" x2="12" y2="22" stroke="#00d2ff" stroke-width="1.2"/>
+              <line x1="2" y1="12" x2="7" y2="12" stroke="#00d2ff" stroke-width="1.2"/>
+              <line x1="17" y1="12" x2="22" y2="12" stroke="#00d2ff" stroke-width="1.2"/>
+            </svg>
+            <span class="app-brand-name">
+              <span style="color:#fff">URBAN</span><span style="color:#00d2ff">LENS</span>
+            </span>
+          </div>
         </div>
-        <div class="metric">
-          <span class="metric-label">Total Reports</span>
-          <span class="metric-value" id="metric-total">0</span>
+        
+        <div class="nav-center">
+          <button id="nav-map-btn" class="nav-link active">CITY MAP</button>
+          <button id="nav-kanban-btn" class="nav-link">KANBAN BOARD</button>
+          <button id="nav-help-btn" class="nav-link">HOW TO USE</button>
         </div>
-        <div class="metric">
-          <span class="metric-label">Resolution Rate</span>
-          <span class="metric-value" id="metric-rate">0%</span>
+
+        <div class="nav-right">
+          <div class="metric">
+            <span class="metric-label">Reports</span>
+            <span class="metric-value" id="metric-total">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Rate</span>
+            <span class="metric-value" id="metric-rate">0%</span>
+          </div>
+          <div class="metric desktop-only">
+            <span class="metric-label">Hotspot</span>
+            <span class="metric-value" id="metric-zone">Alpha</span>
+          </div>
         </div>
-        <div class="metric">
-          <span class="metric-label">High Density</span>
-          <span class="metric-value" id="metric-zone">Sector Alpha</span>
-        </div>
-        <button id="toggle-view-btn" class="glass-btn">Switch to Kanban</button>
-      </div>
+      </nav>
 
       <!-- Main Application Container -->
       <div id="app-container">
@@ -223,6 +226,32 @@
         </div>
       </div>
       
+    </div>
+
+    <!-- How to Use Modal -->
+    <div id="help-modal" class="modal-overlay hidden">
+      <div class="modal-content glass">
+        <button id="close-help-btn" class="close-btn">&times;</button>
+        <h2 style="color: #00d2ff; margin-bottom: 20px; font-weight: 800; letter-spacing: 2px;">FIELD MANUAL</h2>
+        <div class="help-scroll">
+          <div class="help-item">
+            <h4>01. SPATIAL EXPLORATION</h4>
+            <p>Rotate the viewport by clicking and dragging. Use the scroll wheel to zoom into specific sectors of the digital twin.</p>
+          </div>
+          <div class="help-item">
+            <h4>02. ISSUE REPORTING</h4>
+            <p>Double-click any point on the map to drop a pin. UrbanLens automatically detects the district and opens the reporting uplink.</p>
+          </div>
+          <div class="help-item">
+            <h4>03. KANBAN WORKFLOW</h4>
+            <p>Navigate to the Kanban Board to manage reports. Drag cards between columns (New → In Progress → Resolved) to update the system state.</p>
+          </div>
+          <div class="help-item">
+            <h4>04. ACTION MENU</h4>
+            <p>Click the three dots (⋮) on any card for quick actions: Move Status, Verify, or Delete record.</p>
+          </div>
+        </div>
+      </div>
     </div>
     
     <script type="module" src="./main.js"></script>

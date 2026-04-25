@@ -74,9 +74,9 @@ const getZone = (x, z) => {
 // Elements
 const mapView = document.getElementById('map-view');
 const flipContainer = document.getElementById('flip-container');
-const toggleBtn = document.getElementById('toggle-view-btn');
 const addIssueForm = document.getElementById('add-issue-form');
 const tooltip = document.getElementById('tooltip');
+const mainNav = document.getElementById('main-nav');
 
 // View state — tracks whether kanban is showing so toast is suppressed
 let isKanbanActive = false;
@@ -188,7 +188,7 @@ function init3D() {
       setTimeout(() => {
         loadingScreen.style.display = 'none';
         if (appContainer) appContainer.style.display = 'block';
-        if (metricStrip) metricStrip.style.display = 'flex';
+        if (mainNav) mainNav.style.display = 'flex';
       }, 500);
     }
   }, undefined, (error) => console.error("Model failed to load:", error));
@@ -776,14 +776,39 @@ function initApp() {
   init3D();
   initKanbanDrag();
   mapView.addEventListener('scroll', handleScroll);
-  toggleBtn.addEventListener('click', () => {
-    isKanbanActive = !isKanbanActive;
+  
+  // Navigation Logic
+  const navMapBtn = document.getElementById('nav-map-btn');
+  const navKanbanBtn = document.getElementById('nav-kanban-btn');
+  const navHelpBtn = document.getElementById('nav-help-btn');
+  const helpModal = document.getElementById('help-modal');
+  const closeHelpBtn = document.getElementById('close-help-btn');
+
+  const setView = (active) => {
+    isKanbanActive = active;
     flipContainer.style.transform = isKanbanActive ? 'rotateY(180deg)' : 'rotateY(0deg)';
-    toggleBtn.innerText = isKanbanActive ? 'Switch to Map View' : 'Switch to Kanban';
+    
     labelRenderer.domElement.style.display = isKanbanActive ? 'none' : 'block';
     document.getElementById('map-view').style.pointerEvents = isKanbanActive ? 'none' : 'auto';
-    // BUG 2A — allow page to scroll in kanban, lock it on map
     document.body.style.overflow = isKanbanActive ? 'auto' : 'hidden';
+
+    // Update Nav Active State
+    if (isKanbanActive) {
+      navKanbanBtn.classList.add('active');
+      navMapBtn.classList.remove('active');
+    } else {
+      navMapBtn.classList.add('active');
+      navKanbanBtn.classList.remove('active');
+    }
+  };
+
+  navMapBtn.addEventListener('click', () => setView(false));
+  navKanbanBtn.addEventListener('click', () => setView(true));
+  
+  navHelpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+  closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+  helpModal.addEventListener('click', (e) => {
+    if (e.target === helpModal) helpModal.classList.add('hidden');
   });
   
   document.getElementById('submit-issue').addEventListener('click', () => {
@@ -822,4 +847,14 @@ function initApp() {
   updateUI();
 }
 
-initApp();
+const enterBtn = document.getElementById('enter-app-btn');
+if (enterBtn) {
+  enterBtn.addEventListener('click', () => {
+    document.getElementById('landing-view').style.display = 'none';
+    document.getElementById('app-view').style.display = 'block';
+    initApp();
+  });
+} else {
+  // If no landing view (direct entry), just init
+  initApp();
+}
