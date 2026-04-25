@@ -11,7 +11,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
-console.log("UrbanLens: Script starting...");
 
 // ============ APP LOGIC ============
 
@@ -849,4 +848,3 @@ function initApp() {
 
 initApp();
 
-console.log("UrbanLens: Script finished loading.");
