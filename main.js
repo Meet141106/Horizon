@@ -11,16 +11,16 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
+console.log("UrbanLens: Script starting...");
+
+// ============ APP LOGIC ============
+
 const uuid = () => Math.random().toString(36).substring(2, 9);
 
 const defaultIssues = [
   { id: 'seed-1', title: "Subterranean Network Breach", category: "infrastructure", status: "new", votes: 85, coords: {x: 10, y: 0, z: 20}, zone: "Industrial Belt", timestamp: Date.now(), verified: false, seeded: true },
-  { id: 'seed-2', title: "Hydroponic Array Failure", category: "greenery", status: "new", votes: 45, coords: {x: -25, y: 0, z: -25}, zone: "Neon Market", timestamp: Date.now(), verified: false, seeded: true },
-  { id: 'seed-3', title: "Bio-Waste Leakage", category: "sanitation", status: "inprogress", votes: 34, coords: {x: -15, y: 0, z: 5}, zone: "Civic Core", timestamp: Date.now(), verified: false, seeded: true },
-  { id: 'seed-4', title: "Rogue Drone Activity", category: "safety", status: "resolved", votes: 210, coords: {x: 25, y: 0, z: -10}, zone: "Tech Quarter", timestamp: Date.now(), verified: true, seeded: true },
-  { id: 'seed-5', title: "Signal Tower Blackout", category: "infrastructure", status: "new", votes: 62, coords: {x: 15, y: 0, z: 15}, zone: "Industrial Belt", timestamp: Date.now(), verified: false, seeded: true },
-  { id: 'seed-6', title: "Contaminated Water Grid", category: "sanitation", status: "inprogress", votes: 71, coords: {x: -10, y: 0, z: 10}, zone: "Residential Ring", timestamp: Date.now(), verified: false, seeded: true },
-  { id: 'seed-7', title: "Park Sector Overgrowth", category: "greenery", status: "resolved", votes: 38, coords: {x: -20, y: 0, z: -10}, zone: "Neon Market", timestamp: Date.now(), verified: true, seeded: true }
+  { id: 'seed-2', title: "Hydroponic Array Failure", category: "greenery", status: "inprogress", votes: 45, coords: {x: -25, y: 0, z: -25}, zone: "Neon Market", timestamp: Date.now(), verified: false, seeded: true },
+  { id: 'seed-4', title: "Rogue Drone Activity", category: "safety", status: "resolved", votes: 210, coords: {x: 25, y: 0, z: -10}, zone: "Tech Quarter", timestamp: Date.now(), verified: true, seeded: true }
 ];
 
 // TASK 2 — localStorage Zero Error
@@ -847,14 +847,6 @@ function initApp() {
   updateUI();
 }
 
-const enterBtn = document.getElementById('enter-app-btn');
-if (enterBtn) {
-  enterBtn.addEventListener('click', () => {
-    document.getElementById('landing-view').style.display = 'none';
-    document.getElementById('app-view').style.display = 'block';
-    initApp();
-  });
-} else {
-  // If no landing view (direct entry), just init
-  initApp();
-}
+initApp();
+
+console.log("UrbanLens: Script finished loading.");
