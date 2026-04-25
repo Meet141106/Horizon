@@ -460,6 +460,25 @@ body {
 .card-action-btn.move-btn { border-color: #00e5ff; color: #00e5ff; }
 .card-action-btn.resolve-btn { border-color: #4caf50; color: #4caf50; }
 
+/* Card hover tooltip — sits on body outside flip container, no flip transforms */
+.card-tooltip {
+  position: fixed;
+  background: rgba(10, 20, 30, 0.95);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #fff;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  text-align: center;
+  min-width: 140px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  line-height: 1.6;
+}
+
 /* BUG 3 — Filter pill active override */
 .filter-pill.active {
   opacity: 1 !important;

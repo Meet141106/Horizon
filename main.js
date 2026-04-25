@@ -46,13 +46,13 @@ const colorMap = {
 };
 
 const ZONES = [
-  { name: "Neon Market",     xMin: -Infinity, xMax: -15, zMin: -Infinity, zMax:   0,  color: 0x00bcd4, lx: -22, lz: -18 },
-  { name: "Civic Core",      xMin: -15,  xMax:   0, zMin: -Infinity, zMax:   0,  color: 0x9c27b0, lx:  -8, lz:  -8 },
-  { name: "Tech Quarter",    xMin:   0,  xMax:  Infinity, zMin: -Infinity, zMax: -10,  color: 0x673ab7, lx:  22, lz: -14 },
-  { name: "Skybridge West",  xMin: -Infinity, xMax: -10, zMin:   0,  zMax:  Infinity,  color: 0x4caf50, lx: -22, lz:  18 },
-  { name: "Residential Ring",xMin: -10,  xMax:  10, zMin:   0,  zMax:  Infinity,  color: 0x8bc34a, lx:   0, lz:  14 },
-  { name: "Industrial Belt", xMin:  10,  xMax:  Infinity, zMin:   0,  zMax:  15,  color: 0xff9800, lx:  18, lz:   8 },
-  { name: "Harbor Fringe",   xMin:  10,  xMax:  Infinity, zMin:  15,  zMax:  Infinity,  color: 0xff5722, lx:  20, lz:  24 }
+  { name: "Neon Market",     xMin: -Infinity, xMax: -15, zMin: -Infinity, zMax:   0,  color: 0x00bcd4 },
+  { name: "Civic Core",      xMin: -15,  xMax:   0, zMin: -Infinity, zMax:   0,  color: 0x9c27b0 },
+  { name: "Tech Quarter",    xMin:   0,  xMax:  Infinity, zMin: -Infinity, zMax: -10,  color: 0x673ab7 },
+  { name: "Skybridge West",  xMin: -Infinity, xMax: -10, zMin:   0,  zMax:  Infinity,  color: 0x4caf50 },
+  { name: "Residential Ring",xMin: -10,  xMax:  10, zMin:   0,  zMax:  Infinity,  color: 0x8bc34a },
+  { name: "Industrial Belt", xMin:  10,  xMax:  Infinity, zMin:   0,  zMax:  15,  color: 0xff9800 },
+  { name: "Harbor Fringe",   xMin:  10,  xMax:  Infinity, zMin:  15,  zMax:  Infinity,  color: 0xff5722 }
 ];
 
 const getZone = (x, z) => {
@@ -228,10 +228,7 @@ function createZonePlanes() {
     div.style.pointerEvents = 'none';
 
     const label = new CSS2DObject(div);
-    // Use explicit label position if defined, otherwise fall back to zone centroid
-    const lx = z.lx !== undefined ? z.lx : cx;
-    const lz = z.lz !== undefined ? z.lz : cz;
-    label.position.set(lx, 10, lz);
+    label.position.set(cx, 10, cz);
     scene.add(label);
   });
 }
@@ -466,6 +463,18 @@ function animate() {
   if (labelRenderer && scene && camera) labelRenderer.render(scene, camera);
 }
 
+// Kanban card tooltip — lives on body, outside the flipped container
+function getCardTooltip() {
+  let tt = document.getElementById('card-tooltip');
+  if (!tt) {
+    tt = document.createElement('div');
+    tt.id = 'card-tooltip';
+    tt.className = 'card-tooltip';
+    document.body.appendChild(tt);
+  }
+  return tt;
+}
+
 function renderKanban() {
   const statuses = ['new', 'inprogress', 'resolved'];
   
@@ -528,6 +537,27 @@ function renderKanban() {
           }
         }
         
+        // Card hover tooltip — appended to body so rotateY(180deg) doesn't flip it
+        card.addEventListener('mouseenter', () => {
+          const tt = getCardTooltip();
+          tt.innerHTML = `<div>${issue.title}</div><div style="color:${colorHex};margin-top:2px">${issue.category.toUpperCase()}</div><div style="color:#8892b0;margin-top:2px">Votes: ${issue.votes}</div>`;
+          // Position above card, centered
+          const rect = card.getBoundingClientRect();
+          tt.style.opacity = '0'; // brief hide so we can measure
+          tt.style.visibility = 'visible';
+          requestAnimationFrame(() => {
+            const ttH = tt.offsetHeight;
+            const top = rect.top < 80 ? rect.bottom + 8 : rect.top - ttH - 8;
+            tt.style.top = top + 'px';
+            tt.style.left = (rect.left + rect.width / 2) + 'px';
+            tt.style.opacity = '1';
+          });
+        });
+        card.addEventListener('mouseleave', () => {
+          const tt = getCardTooltip();
+          tt.style.opacity = '0';
+        });
+
         // Card click — expand to show action buttons
         card.addEventListener('click', (e) => {
           e.stopPropagation(); // BUG 1 — stop bubbling to map layer
