@@ -1,30 +1,26 @@
-import React from 'react'
-import Navbar from './components/Navbar'
-import Hero from './components/Hero'
-import WhatIfPanel from './components/WhatIfPanel'
-import InsightCards from './components/InsightCards'
-import TimelineCanvas from './components/Timeline/TimelineCanvas'
-import ZoomControls from './components/ZoomControls'
+import React, { useState } from 'react';
+import TopNav from './components/TopNav.jsx';
+import LandingPage from './landing/LandingPage.jsx';
+import CityMapView from './views/CityMapView.jsx';
+import KanbanView from './views/KanbanView.jsx';
 
-function App() {
+/*
+  Views:
+    'landing'  → Drone scrollytelling hero
+    'map'      → 3D City Map (Three.js)
+    'kanban'   → Issue Board (Kanban)
+*/
+
+export default function App() {
+  const [view, setView] = useState('landing');
+
   return (
-    <div className="min-h-screen bg-void text-primary font-sans antialiased pb-20">
-      <Navbar />
-      <Hero />
-      
-      <ZoomControls />
-      <TimelineCanvas />
+    <>
+      <TopNav currentView={view} onNavigate={setView} />
 
-      <div className="max-w-[1280px] mx-auto px-8 grid grid-cols-1 md:grid-cols-12 gap-6 mt-12">
-        <div className="md:col-span-5">
-          <WhatIfPanel />
-        </div>
-        <div className="md:col-span-7">
-          <InsightCards />
-        </div>
-      </div>
-    </div>
-  )
+      {view === 'landing' && <LandingPage onEnter={() => setView('map')} />}
+      {view === 'map'     && <CityMapView />}
+      {view === 'kanban'  && <KanbanView />}
+    </>
+  );
 }
-
-export default App

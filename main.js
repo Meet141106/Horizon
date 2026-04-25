@@ -194,12 +194,31 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
   
-  // Update zone label sizes
   document.querySelectorAll('.zone-label').forEach(el => {
     el.style.fontSize = window.innerWidth <= 480 ? '9px' : '11px';
   });
   
   initMobileTabs();
+}
+
+// Scrollytelling logic from Friend's branch
+function handleScroll() {
+  const scrollTop = mapView.scrollTop;
+  const scrollHeight = mapView.scrollHeight - mapView.clientHeight;
+  const progress = scrollTop / scrollHeight;
+  
+  const scrolly = document.getElementById('scrolly-overlay');
+  const scrollyText = document.getElementById('scrolly-text');
+  
+  if (progress > 0.8) {
+    scrolly.classList.remove('hidden');
+    scrollyText.innerText = "Street Level Grid: Highlighting hyper-local issue density and recent reports.";
+  } else if (progress > 0.4) {
+    scrolly.classList.remove('hidden');
+    scrollyText.innerText = "Mid-Altitude Scan: Regional anomaly detection active.";
+  } else {
+    scrolly.classList.add('hidden');
+  }
 }
 
 function onMapDoubleClick(event) {
@@ -214,7 +233,6 @@ function onMapDoubleClick(event) {
     currentHitPoint = intersects[0].point;
     const zoneInfo = getZone(currentHitPoint.x, currentHitPoint.z);
     
-    // Create or update ghost pin
     if (!ghostPin) {
       ghostPin = new THREE.Group();
       
@@ -234,7 +252,6 @@ function onMapDoubleClick(event) {
     }
     ghostPin.position.set(currentHitPoint.x, 0, currentHitPoint.z);
 
-    // Create or update ghost label (Google Maps style)
     if (!ghostLabel) {
       const div = document.createElement('div');
       div.className = 'ghost-zone-label';
@@ -255,7 +272,6 @@ function onMapDoubleClick(event) {
     ghostLabel.element.innerText = zoneInfo.name;
     ghostLabel.position.set(currentHitPoint.x, 15, currentHitPoint.z);
 
-    // Enable form
     addIssueForm.classList.remove('inactive-form');
     document.getElementById('issue-title').disabled = false;
     document.getElementById('issue-category').disabled = false;
@@ -341,8 +357,8 @@ function render3DPins() {
     const shaft = new THREE.Mesh(shaftGeo, shaftMat);
     shaft.position.y = 6;
 
-    const haloGeo = new THREE.RingGeometry(1, 4, 32);
-    const haloMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+    const haloGeo = new THREE.RingGeometry(1, 4 + (issue.votes * 0.05), 32);
+    const haloMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
     const halo = new THREE.Mesh(haloGeo, haloMat);
     halo.rotation.x = -Math.PI / 2;
     halo.position.y = 0.1;
@@ -367,10 +383,14 @@ function animate() {
   const time = Date.now() * 0.005;
   pinGroup.children.forEach(pin => {
     if (pin.userData.isPin) {
+      const orb = pin.children[0];
       const halo = pin.children[2];
       const scale = 1 + 0.5 * Math.sin(time + pin.userData.phase);
       halo.scale.set(scale, scale, scale);
       halo.material.opacity = 0.5 - (0.2 * Math.sin(time + pin.userData.phase));
+      
+      const orbScale = 1 + 0.1 * Math.sin(time + pin.userData.phase);
+      orb.scale.set(orbScale, orbScale, orbScale);
     }
   });
 
@@ -383,7 +403,7 @@ function animate() {
   labelRenderer.render(scene, camera);
 }
 
-// Kanban Render
+// Kanban Render with Particle effects from Friend's branch
 function renderKanban() {
   const statuses = ['new', 'inprogress', 'resolved'];
   
@@ -427,6 +447,18 @@ function renderKanban() {
             <button class="upvote-btn" data-id="${issue.id}">▲ ${issue.votes}</button>
           </div>
         `;
+        
+        // Add particles for resolved cards (from Friend's branch)
+        if (issue.status === 'resolved') {
+          for(let i=0; i<3; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.bottom = '0';
+            p.style.animationDelay = `${Math.random() * 1.5}s`;
+            card.appendChild(p);
+          }
+        }
         
         card.addEventListener('dragstart', handleDragStart);
         card.addEventListener('dragend', handleDragEnd);
@@ -621,6 +653,9 @@ function updateUI() {
 function initApp() {
   init3D();
   initKanbanDrag();
+  
+  // Listen for scroll for scrollytelling
+  mapView.addEventListener('scroll', handleScroll);
   
   let isKanban = false;
   toggleBtn.addEventListener('click', () => {
