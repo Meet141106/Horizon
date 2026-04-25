@@ -531,6 +531,10 @@ function renderKanban() {
         menuHtml += `<button class="card-dropdown-item delete-item" data-action="delete">Delete Issue</button>`;
         dropdown.innerHTML = menuHtml;
         
+        menuBtn.addEventListener('mousedown', (e) => {
+          e.stopPropagation(); // Prevent native drag-and-drop from hijacking the click
+        });
+        
         menuBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           console.log(`[KANBAN] 3-dot menu clicked for issue ${issue.id}`);
