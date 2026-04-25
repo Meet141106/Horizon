@@ -8,9 +8,14 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' https:; object-src 'none';">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   </head>
-  <body>
+  <body style="background: #03050a; overflow: hidden;">
+    <div id="loading-screen">
+      <div class="loader"></div>
+      <div style="margin-top: 20px; font-weight: 800; letter-spacing: 2px; color: #00d2ff;">POLIS NEXUS INITIALIZING...</div>
+    </div>
+
     <!-- Top Nav / Metric Strip -->
-    <div id="metric-strip" class="glass">
+    <div id="metric-strip" class="glass" style="display: none;">
       <div class="metric">
         <span class="metric-label">Total Reports</span>
         <span class="metric-value" id="metric-total">0</span>

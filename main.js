@@ -167,6 +167,20 @@ function init3D() {
       }
     });
     scene.add(model);
+    
+    // Hide loading screen and show app
+    const loadingScreen = document.getElementById('loading-screen');
+    const appContainer = document.getElementById('app-container');
+    const metricStrip = document.getElementById('metric-strip');
+    
+    if (loadingScreen) {
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        if (appContainer) appContainer.style.display = 'block';
+        if (metricStrip) metricStrip.style.display = 'flex';
+      }, 500);
+    }
   }, undefined, (error) => console.error("Model failed to load:", error));
 
   window.addEventListener('resize', onWindowResize);
