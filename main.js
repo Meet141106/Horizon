@@ -11,172 +11,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
-// ============ LANDING PAGE — DRONE SCENE ============
-
-let droneRenderer, droneScene, droneCamera, droneGroup;
-let droneMixer, droneClock = new THREE.Clock();
-let landingActive = true;
-
-function initDroneScene() {
-  const canvas = document.getElementById('drone-canvas');
-  if (!canvas) return;
-
-  droneRenderer = new THREE.WebGLRenderer({ 
-    canvas, alpha: true, antialias: true 
-  });
-  droneRenderer.setSize(window.innerWidth, window.innerHeight);
-  droneRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-  droneScene = new THREE.Scene();
-  
-  droneCamera = new THREE.PerspectiveCamera(
-    45, window.innerWidth / window.innerHeight, 0.1, 1000
-  );
-  droneCamera.position.set(0, 10, 30);
-
-  // Lighting
-  droneScene.add(new THREE.AmbientLight(0x223344, 2));
-  const dir = new THREE.DirectionalLight(0x00d2ff, 3);
-  dir.position.set(10, 20, 10);
-  droneScene.add(dir);
-  const rim = new THREE.DirectionalLight(0x0044ff, 1.5);
-  rim.position.set(-10, 5, -10);
-  droneScene.add(rim);
-
-  droneGroup = new THREE.Group();
-  droneScene.add(droneGroup);
-
-  // Load drone GLB
-  const droneLoader = new GLTFLoader();
-  droneLoader.load(
-    './animated_drone_with_camera_free.glb',
-    (gltf) => {
-      const model = gltf.scene;
-      model.scale.set(2, 2, 2);
-      droneGroup.add(model);
-
-      if (gltf.animations.length > 0) {
-        droneMixer = new THREE.AnimationMixer(model);
-        gltf.animations.forEach(clip => 
-          droneMixer.clipAction(clip).play()
-        );
-      }
-
-      setupDroneScrollAnimation();
-    },
-    undefined,
-    (err) => console.warn('Drone GLB load error:', err)
-  );
-
-  // Animate loop for drone
-  function animateDrone() {
-    if (!landingActive) return; // stop loop when landing exits
-    requestAnimationFrame(animateDrone);
-    const delta = droneClock.getDelta();
-    if (droneMixer) droneMixer.update(delta);
-    droneRenderer.render(droneScene, droneCamera);
-  }
-  animateDrone();
-
-  // Resize
-  window.addEventListener('resize', () => {
-    droneCamera.aspect = window.innerWidth / window.innerHeight;
-    droneCamera.updateProjectionMatrix();
-    droneRenderer.setSize(window.innerWidth, window.innerHeight);
-  });
-}
-
-function setupDroneScrollAnimation() {
-  // Initial position — Stage 1
-  droneGroup.position.set(0, 8, 25);
-
-  // Scroll-driven animation using plain scroll event
-  // (no GSAP dependency — keeps it simple)
-  window.addEventListener('scroll', () => {
-    if (!landingActive) return;
-    
-    const scrollY = window.scrollY;
-    const maxScroll = document.getElementById('landing-view')
-      .offsetHeight - window.innerHeight;
-    const progress = Math.min(scrollY / maxScroll, 1); // 0 to 1
-
-    // Stage 1 → Stage 2 (progress 0 to 0.5)
-    // Stage 2 → Stage 3 (progress 0.5 to 1)
-    
-    if (progress <= 0.5) {
-      const t = progress / 0.5; // 0 to 1 within stage
-      droneGroup.position.x = lerp(0,   -3,  t);
-      droneGroup.position.y = lerp(8,    2,  t);
-      droneGroup.position.z = lerp(25,   8,  t);
-      droneGroup.rotation.x = lerp(0,  -0.3, t);
-      droneGroup.rotation.y = lerp(0,   0.4, t);
-    } else {
-      const t = (progress - 0.5) / 0.5; // 0 to 1 within stage
-      droneGroup.position.x = lerp(-3,   8,  t);
-      droneGroup.position.y = lerp(2,   15,  t);
-      droneGroup.position.z = lerp(8,  -10,  t);
-      droneGroup.rotation.x = lerp(-0.3, -0.5, t);
-      droneGroup.rotation.y = lerp(0.4,  -0.8, t);
-    }
-  });
-
-  // Gentle hover bob
-  let bobT = 0;
-  function bob() {
-    if (!landingActive) return;
-    requestAnimationFrame(bob);
-    bobT += 0.01;
-    droneGroup.position.y += Math.sin(bobT) * 0.002;
-  }
-  bob();
-}
-
-function lerp(a, b, t) {
-  return a + (b - a) * Math.min(Math.max(t, 0), 1);
-}
-
-// ============ LANDING → APP TRANSITION ============
-
-function enterApp() {
-  const landingEl = document.getElementById('landing-view');
-  const appEl = document.getElementById('app-view');
-  
-  landingEl.classList.add('fade-out');
-  
-  setTimeout(() => {
-    // Hide landing completely
-    landingEl.style.display = 'none';
-    landingActive = false;
-    
-    // Stop drone render loop (memory cleanup)
-    if (droneRenderer) {
-      droneRenderer.dispose();
-    }
-    
-    // Show app
-    appEl.style.display = 'block';
-    document.body.classList.add('app-active');
-    
-    // Reset scroll to top for app
-    window.scrollTo(0, 0);
-    
-    // Initialize the city map (call your existing init function)
-    initCityMap(); 
-    
-  }, 800);
-}
-
-// Boot landing on page load
-document.addEventListener('DOMContentLoaded', () => {
-  initDroneScene();
-  
-  document.getElementById('enter-app-btn')
-    .addEventListener('click', enterApp);
-});
-
-// ============ END LANDING ============
-
-function initCityMap() {
 const uuid = () => Math.random().toString(36).substring(2, 9);
 
 const defaultIssues = [
@@ -674,19 +508,55 @@ function renderKanban() {
         card.draggable = true;
         card.dataset.id = issue.id;
         
-        card.innerHTML = `<div class="card-title">${issue.title}</div><div class="card-meta"><span style="text-transform:capitalize;color:var(--card-color);font-size:13px;">${issue.category}</span><button class="upvote-btn" data-id="${issue.id}">▲ ${issue.votes}</button></div>`;
+        card.innerHTML = `<div class="card-title" style="padding-right: 24px;">${issue.title}</div><div class="card-meta"><span style="text-transform:capitalize;color:var(--card-color);font-size:13px;">${issue.category}</span><button class="upvote-btn" data-id="${issue.id}">▲ ${issue.votes}</button></div>`;
         
-        // BUG 2B — Card click actions area
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'card-actions';
+        // 3 Dot Menu
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'card-menu-btn';
+        menuBtn.innerHTML = '⋮';
+        
+        const dropdown = document.createElement('div');
+        dropdown.className = 'card-dropdown';
+        let menuHtml = '';
         if (issue.status === 'new') {
-          actionsDiv.innerHTML = `<button class="card-action-btn move-btn" data-target="inprogress">→ Move to In Progress</button><button class="card-action-btn cancel-btn">✕ Cancel</button>`;
+           menuHtml += `<button class="card-dropdown-item" data-action="inprogress">Move to In Progress</button>`;
+           menuHtml += `<button class="card-dropdown-item" data-action="resolved">Move to Resolved</button>`;
         } else if (issue.status === 'inprogress') {
-          actionsDiv.innerHTML = `<button class="card-action-btn resolve-btn" data-target="resolved">→ Move to Resolved</button><button class="card-action-btn cancel-btn">✕ Cancel</button>`;
+           menuHtml += `<button class="card-dropdown-item" data-action="new">Move to New</button>`;
+           menuHtml += `<button class="card-dropdown-item" data-action="resolved">Move to Resolved</button>`;
         } else {
-          actionsDiv.innerHTML = `<button class="card-action-btn cancel-btn">✕ Close</button>`;
+           menuHtml += `<button class="card-dropdown-item" data-action="new">Move to New</button>`;
+           menuHtml += `<button class="card-dropdown-item" data-action="inprogress">Move to In Progress</button>`;
         }
-        card.appendChild(actionsDiv);
+        menuHtml += `<button class="card-dropdown-item delete-item" data-action="delete">Delete Issue</button>`;
+        dropdown.innerHTML = menuHtml;
+        
+        menuBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isShowing = dropdown.classList.contains('show');
+          document.querySelectorAll('.card-dropdown').forEach(d => d.classList.remove('show'));
+          if (!isShowing) dropdown.classList.add('show');
+        });
+        
+        dropdown.querySelectorAll('.card-dropdown-item').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const action = btn.dataset.action;
+            if (action === 'delete') {
+              issues = issues.filter(i => i.id !== issue.id);
+            } else {
+              issue.status = action;
+              if (action === 'resolved') {
+                setTimeout(() => { issue.verified = true; saveState(); updateUI(); }, 2000);
+              }
+            }
+            saveState();
+            updateUI();
+          });
+        });
+        
+        card.appendChild(menuBtn);
+        card.appendChild(dropdown);
         
         if (issue.status === 'resolved') {
           for(let i=0; i<3; i++) {
@@ -699,33 +569,7 @@ function renderKanban() {
           }
         }
         
-        // Card click — expand to show action buttons
-        card.addEventListener('click', (e) => {
-          e.stopPropagation(); // BUG 1 — stop bubbling to map layer
-          if (e.target.classList.contains('upvote-btn')) return;
-          if (e.target.classList.contains('card-action-btn')) return;
-          document.querySelectorAll('.issue-card.card-expanded').forEach(c => c.classList.remove('card-expanded'));
-          card.classList.add('card-expanded');
-        });
-        
-        // Move button handlers
-        actionsDiv.querySelectorAll('.card-action-btn[data-target]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const newStatus = btn.dataset.target;
-            issue.status = newStatus;
-            if (newStatus === 'resolved') {
-              setTimeout(() => { issue.verified = true; saveState(); updateUI(); }, 2000);
-            }
-            saveState();
-            updateUI();
-          });
-        });
-        // Cancel/close button
-        actionsDiv.querySelector('.cancel-btn')?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          card.classList.remove('card-expanded');
-        });
+
         
         card.addEventListener('dragstart', handleDragStart);
         card.addEventListener('dragend', handleDragEnd);
@@ -772,6 +616,14 @@ function renderKanban() {
           saveState();
           updateUI();
         });
+        
+        // Hide dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.card-menu-btn')) {
+            document.querySelectorAll('.card-dropdown').forEach(d => d.classList.remove('show'));
+          }
+        });
+        
         cardsContainer.appendChild(card);
       });
     }
@@ -798,12 +650,7 @@ function attachFilterListeners() {
   });
 }
 
-// BUG 1 — Collapse expanded cards when clicking outside
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.issue-card')) {
-    document.querySelectorAll('.issue-card.card-expanded').forEach(c => c.classList.remove('card-expanded'));
-  }
-});
+// Removed expand card outside click handler because we use dropdowns now
 
 function initMobileTabs() {
   if (window.innerWidth > 480) {
@@ -835,15 +682,19 @@ let lastMouseX = 0;
 
 function handleDragStart(e) {
   draggedCard = this;
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', this.dataset.id || '');
-  }
   setTimeout(() => this.style.opacity = '0.4', 0);
   lastMouseX = e.clientX;
+  
+  // Fix upside-down/mirrored native drag ghost by using an unrotated body clone
+  const ghost = this.cloneNode(true);
+  ghost.style.position = 'absolute';
+  ghost.style.top = '-1000px';
+  document.body.appendChild(ghost);
+  e.dataTransfer.setDragImage(ghost, e.offsetX || 0, e.offsetY || 0);
+  setTimeout(() => ghost.remove(), 0);
 }
 
-function handleDragEnd(e) {
+function handleDragEnd() {
   this.style.opacity = '1';
   this.style.transform = 'rotate(0deg)';
   draggedCard = null;
@@ -853,9 +704,6 @@ function initKanbanDrag() {
   document.querySelectorAll('.kanban-column').forEach(col => {
     col.addEventListener('dragover', (e) => {
       e.preventDefault();
-      if (e.dataTransfer) {
-        e.dataTransfer.dropEffect = 'move';
-      }
       if (draggedCard) {
         const deltaX = e.clientX - lastMouseX;
         lastMouseX = e.clientX;
@@ -960,5 +808,4 @@ function initApp() {
   updateUI();
 }
 
-  initApp();
-}
+initApp();
