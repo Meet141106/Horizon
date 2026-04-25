@@ -1,5 +1,5 @@
-# Project Polis — PS-03
-
+# UrbanLens — Civic Intelligence Platform
+### PS-03 | HORIZON'26 Social Impact Track
 ## What it does
 Dual-mode civic issue reporting app with a 3D cyberpunk city map 
 and a synced Kanban board.
