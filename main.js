@@ -1,3 +1,10 @@
+/**
+ * PROJECT POLIS — PS-03 (HORIZON'26)
+ * Architecture: Vanilla JS + Three.js (single file)
+ * Entry: index.html → main.js
+ * Note: src/ contains an experimental React port (dead code, not loaded)
+ */
+
 import './style.css';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
