@@ -78,7 +78,7 @@ let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 
 let currentHitPoint = null;
-let currentFilter = 'all';
+let activeFilter = 'all'; // Renamed from currentFilter for Bug 2
 const sortModes = { new: 'votes', inprogress: 'votes', resolved: 'votes' };
 
 let ghostPin = null;
@@ -390,7 +390,7 @@ function render3DPins() {
       pinGroup.remove(pin); 
   }
   
-  const filtered = currentFilter === 'all' ? issues : issues.filter(i => i.category === currentFilter);
+  const filtered = activeFilter === 'all' ? issues : issues.filter(i => i.category === activeFilter);
 
   filtered.forEach(issue => {
     const color = colorMap[issue.category];
@@ -467,10 +467,11 @@ function renderKanban() {
     const cardsContainer = col.querySelector('.kanban-cards');
     cardsContainer.innerHTML = '';
     
-    let colIssues = issues.filter(i => i.status === status);
-    if (currentFilter !== 'all') {
-      colIssues = colIssues.filter(i => i.category === currentFilter);
-    }
+    const colIssues = issues.filter(issue => {
+      const statusMatch = issue.status === status;
+      const categoryMatch = activeFilter === 'all' || issue.category === activeFilter;
+      return statusMatch && categoryMatch;
+    });
 
     const sortMode = sortModes[status];
     colIssues.sort((a, b) => {
@@ -629,9 +630,15 @@ function initKanbanDrag() {
       }
     });
   });
-  document.querySelectorAll('.filter-btn').forEach(btn => {
+  // Filters
+  document.querySelectorAll('.filter-pill').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      currentFilter = e.target.dataset.filter;
+      activeFilter = e.currentTarget.dataset.category;
+      
+      // Toggle active class
+      document.querySelectorAll('.filter-pill').forEach(pill => pill.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      
       updateUI();
     });
   });

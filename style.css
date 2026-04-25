@@ -136,13 +136,10 @@ body {
 .face-back {
   transform: rotateY(180deg);
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  padding: 120px 40px 40px; 
+  padding: 180px 40px 40px; 
   background: radial-gradient(circle at 50% 50%, #0d131f 0%, #03050a 100%);
-  height: 100vh;
-  box-sizing: border-box;
 }
 
 /* Map View */
@@ -272,11 +269,21 @@ body {
     padding: 0 10px 10px;
     justify-content: flex-start;
   }
-  .filter-btn {
+  .filter-pill {
     flex-shrink: 0;
     white-space: nowrap;
   }
 }
+
+.filter-pill.active {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.6);
+  color: #ffffff;
+}
+.filter-pill[data-category="infrastructure"].active { border-color: #00bcd4; color: #00bcd4; }
+.filter-pill[data-category="sanitation"].active { border-color: #ffeb3b; color: #ffeb3b; }
+.filter-pill[data-category="safety"].active { border-color: #f44336; color: #f44336; }
+.filter-pill[data-category="greenery"].active { border-color: #4caf50; color: #4caf50; }
 
 .kanban-board {
   display: flex; gap: 40px; width: 100%; max-width: 1400px; height: 100%;
@@ -300,9 +307,10 @@ body {
   }
   .kanban-column {
     display: none;
+    max-height: 65vh;
   }
   .kanban-column.active-tab {
-    display: block;
+    display: flex;
   }
 }
 
@@ -364,11 +372,19 @@ body {
   padding: 25px;
   backdrop-filter: blur(12px);
   box-shadow: inset 0 0 30px rgba(0,0,0,0.4);
-  max-height: 100%; /* Ensure columns don't exceed board height */
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+.kanban-column::-webkit-scrollbar { width: 4px; }
+.kanban-column::-webkit-scrollbar-track { background: transparent; }
+.kanban-column::-webkit-scrollbar-thumb { 
+  background: rgba(255,255,255,0.15); 
+  border-radius: 4px; 
 }
 
 .kanban-header {
-  flex-shrink: 0;
   font-size: 15px; font-weight: 800; text-transform: uppercase;
   margin-bottom: 25px;
   letter-spacing: 0.08em;
@@ -377,28 +393,13 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.05);
   padding-bottom: 15px;
 }
-
 .kanban-cards {
-  flex: 1; 
-  overflow-y: auto;
-  display: flex; flex-direction: column; gap: 20px;
-  padding-right: 5px; /* Space for scrollbar */
+  flex: 1;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 12px;
+  min-height: 0;
 }
-
-.kanban-cards::-webkit-scrollbar { 
-  width: 6px;
-}
-.kanban-cards::-webkit-scrollbar-track {
-  background: rgba(255,255,255,0.02);
-  border-radius: 10px;
-}
-.kanban-cards::-webkit-scrollbar-thumb {
-  background: rgba(0, 210, 255, 0.2);
-  border-radius: 10px;
-}
-.kanban-cards::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 210, 255, 0.4);
-}
+.kanban-cards::-webkit-scrollbar { display: none; }
 
 .empty-placeholder::before {
   content: '🏙️';
