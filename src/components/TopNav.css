@@ -89,3 +89,50 @@
   flex-shrink: 0;
   box-shadow: 0 0 6px currentColor;
 }
+
+/* Metrics */
+.nav-right {
+  display: flex;
+  gap: 25px;
+  margin-left: auto;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 0.6rem;
+  color: #8892b0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.metric-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  #top-nav {
+    width: 95%;
+    gap: 15px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    top: 10px;
+  }
+  .nav-links {
+    gap: 5px;
+  }
+  .nav-link {
+    padding: 6px 12px;
+    font-size: 0.7rem;
+  }
+  .desktop-only {
+    display: none;
+  }
+}
