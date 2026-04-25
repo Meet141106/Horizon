@@ -1,16 +1,113 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <title>Horizon</title>
+    <title>Polis Nexus</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- Top Nav / Metric Strip -->
+    <div id="metric-strip" class="glass">
+      <div class="metric">
+        <span class="metric-label">Total Reports</span>
+        <span class="metric-value" id="metric-total">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Resolution Rate</span>
+        <span class="metric-value" id="metric-rate">0%</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">High Density</span>
+        <span class="metric-value" id="metric-zone">Sector Alpha</span>
+      </div>
+      <button id="toggle-view-btn" class="glass-btn">Switch to Kanban</button>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app-container">
+      <div id="flip-container">
+        
+        <div id="map-view" class="face face-front">
+          <div id="scroll-diving-layer"></div>
+          
+          <canvas id="webgl-canvas"></canvas>
+          
+          <!-- Scrollytelling Highlights -->
+          <div id="scrolly-overlay" class="glass slide-in hidden">
+             <h2 style="margin-bottom: 5px; font-weight: 800; letter-spacing: 1px; font-size: 1.1rem; color: var(--c-infrastructure)">Locality Scan</h2>
+             <p id="scrolly-text" style="font-size: 0.9rem; color: #ccc;">Scanning regional coordinates...</p>
+          </div>
+          
+          <!-- Issue Reporting Form -->
+          <div id="add-issue-form" class="glass inactive-form">
+             <div id="form-helper-text" class="form-helper-text">Double-click the map to drop a pin</div>
+             <h3 style="margin-bottom: 5px; font-weight: 600; text-transform: uppercase; font-size: 0.9rem; color: #aaa;">Drop a Pin</h3>
+             <div id="form-zone-name" style="margin-bottom: 10px; font-weight: 800; font-size: 1.1rem; text-transform: uppercase;"></div>
+             <input type="text" id="issue-title" placeholder="Describe the issue..." disabled />
+             <select id="issue-category" disabled>
+                <option value="infrastructure">Infrastructure</option>
+                <option value="sanitation">Sanitation</option>
+                <option value="safety">Safety</option>
+                <option value="greenery">Greenery</option>
+             </select>
+             <div style="display: flex; gap: 10px;">
+                <button id="cancel-issue" class="glass-btn" style="flex: 1; border-color: rgba(255,255,255,0.2); color: #ccc;" disabled>Cancel</button>
+                <button id="submit-issue" class="glass-btn" style="flex: 2; background: var(--c-infrastructure); color: #000; font-weight: 800;" disabled>Pin to Map</button>
+             </div>
+          </div>
+        </div>
+
+        <!-- Kanban Board View -->
+        <div id="kanban-view" class="face face-back" style="flex-direction: column;">
+          <div id="filter-bar" style="display:flex; gap:10px; justify-content:center; margin-bottom: 20px; width: 100%; max-width: 1400px;">
+            <button class="glass-btn filter-btn" data-filter="all" style="border-color: #fff">All</button>
+            <button class="glass-btn filter-btn" data-filter="infrastructure" style="border-color: var(--c-infrastructure)">Infrastructure</button>
+            <button class="glass-btn filter-btn" data-filter="sanitation" style="border-color: var(--c-sanitation)">Sanitation</button>
+            <button class="glass-btn filter-btn" data-filter="safety" style="border-color: var(--c-safety)">Safety</button>
+            <button class="glass-btn filter-btn" data-filter="greenery" style="border-color: var(--c-greenery)">Greenery</button>
+          </div>
+          <div class="kanban-board">
+            <div class="kanban-column" data-status="new" style="border-top: 3px solid var(--c-infrastructure);">
+              <div class="kanban-header">
+                <div style="display:flex; justify-content: space-between; align-items:center; font-size: 0.9rem;">
+                  <span>New Reports <span class="count-badge">(0)</span></span>
+                  <button class="sort-btn glass-btn" data-sort="votes" style="padding: 4px 8px; font-size: 0.7rem;">▲ Votes</button>
+                </div>
+              </div>
+              <div class="kanban-cards"></div>
+              <div class="kanban-footer" style="text-align: center; color: #8892b0; font-size: 0.8rem; margin-top: 15px;">Avg upvotes: <span class="avg-upvotes">0</span></div>
+            </div>
+            <div class="kanban-column" data-status="inprogress" style="border-top: 3px solid var(--c-sanitation);">
+              <div class="kanban-header">
+                <div style="display:flex; justify-content: space-between; align-items:center; font-size: 0.9rem;">
+                  <span>In Progress <span class="count-badge">(0)</span></span>
+                  <button class="sort-btn glass-btn" data-sort="votes" style="padding: 4px 8px; font-size: 0.7rem;">▲ Votes</button>
+                </div>
+              </div>
+              <div class="kanban-cards"></div>
+              <div class="kanban-footer" style="text-align: center; color: #8892b0; font-size: 0.8rem; margin-top: 15px;">Avg upvotes: <span class="avg-upvotes">0</span></div>
+            </div>
+            <div class="kanban-column" data-status="resolved" style="border-top: 3px solid var(--c-greenery);">
+              <div class="kanban-header">
+                <div style="display:flex; justify-content: space-between; align-items:center; font-size: 0.9rem;">
+                  <span>Resolved <span class="count-badge">(0)</span></span>
+                  <button class="sort-btn glass-btn" data-sort="votes" style="padding: 4px 8px; font-size: 0.7rem;">▲ Votes</button>
+                </div>
+              </div>
+              <div class="kanban-cards"></div>
+              <div class="kanban-footer" style="text-align: center; color: #8892b0; font-size: 0.8rem; margin-top: 15px;">Avg upvotes: <span class="avg-upvotes">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="tooltip" class="glass hidden" style="position: absolute; pointer-events: none; z-index: 1000; padding: 10px; font-size: 0.8rem; display: flex; flex-direction: column; gap: 5px;"></div>
+
+
+      </div>
+    </div>
+    
+    <script type="module" src="./main.js"></script>
   </body>
 </html>
