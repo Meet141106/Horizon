@@ -11,6 +11,172 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
+// ============ LANDING PAGE — DRONE SCENE ============
+
+let droneRenderer, droneScene, droneCamera, droneGroup;
+let droneMixer, droneClock = new THREE.Clock();
+let landingActive = true;
+
+function initDroneScene() {
+  const canvas = document.getElementById('drone-canvas');
+  if (!canvas) return;
+
+  droneRenderer = new THREE.WebGLRenderer({ 
+    canvas, alpha: true, antialias: true 
+  });
+  droneRenderer.setSize(window.innerWidth, window.innerHeight);
+  droneRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  droneScene = new THREE.Scene();
+  
+  droneCamera = new THREE.PerspectiveCamera(
+    45, window.innerWidth / window.innerHeight, 0.1, 1000
+  );
+  droneCamera.position.set(0, 10, 30);
+
+  // Lighting
+  droneScene.add(new THREE.AmbientLight(0x223344, 2));
+  const dir = new THREE.DirectionalLight(0x00d2ff, 3);
+  dir.position.set(10, 20, 10);
+  droneScene.add(dir);
+  const rim = new THREE.DirectionalLight(0x0044ff, 1.5);
+  rim.position.set(-10, 5, -10);
+  droneScene.add(rim);
+
+  droneGroup = new THREE.Group();
+  droneScene.add(droneGroup);
+
+  // Load drone GLB
+  const droneLoader = new GLTFLoader();
+  droneLoader.load(
+    './animated_drone_with_camera_free.glb',
+    (gltf) => {
+      const model = gltf.scene;
+      model.scale.set(2, 2, 2);
+      droneGroup.add(model);
+
+      if (gltf.animations.length > 0) {
+        droneMixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach(clip => 
+          droneMixer.clipAction(clip).play()
+        );
+      }
+
+      setupDroneScrollAnimation();
+    },
+    undefined,
+    (err) => console.warn('Drone GLB load error:', err)
+  );
+
+  // Animate loop for drone
+  function animateDrone() {
+    if (!landingActive) return; // stop loop when landing exits
+    requestAnimationFrame(animateDrone);
+    const delta = droneClock.getDelta();
+    if (droneMixer) droneMixer.update(delta);
+    droneRenderer.render(droneScene, droneCamera);
+  }
+  animateDrone();
+
+  // Resize
+  window.addEventListener('resize', () => {
+    droneCamera.aspect = window.innerWidth / window.innerHeight;
+    droneCamera.updateProjectionMatrix();
+    droneRenderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+function setupDroneScrollAnimation() {
+  // Initial position — Stage 1
+  droneGroup.position.set(0, 8, 25);
+
+  // Scroll-driven animation using plain scroll event
+  // (no GSAP dependency — keeps it simple)
+  window.addEventListener('scroll', () => {
+    if (!landingActive) return;
+    
+    const scrollY = window.scrollY;
+    const maxScroll = document.getElementById('landing-view')
+      .offsetHeight - window.innerHeight;
+    const progress = Math.min(scrollY / maxScroll, 1); // 0 to 1
+
+    // Stage 1 → Stage 2 (progress 0 to 0.5)
+    // Stage 2 → Stage 3 (progress 0.5 to 1)
+    
+    if (progress <= 0.5) {
+      const t = progress / 0.5; // 0 to 1 within stage
+      droneGroup.position.x = lerp(0,   -3,  t);
+      droneGroup.position.y = lerp(8,    2,  t);
+      droneGroup.position.z = lerp(25,   8,  t);
+      droneGroup.rotation.x = lerp(0,  -0.3, t);
+      droneGroup.rotation.y = lerp(0,   0.4, t);
+    } else {
+      const t = (progress - 0.5) / 0.5; // 0 to 1 within stage
+      droneGroup.position.x = lerp(-3,   8,  t);
+      droneGroup.position.y = lerp(2,   15,  t);
+      droneGroup.position.z = lerp(8,  -10,  t);
+      droneGroup.rotation.x = lerp(-0.3, -0.5, t);
+      droneGroup.rotation.y = lerp(0.4,  -0.8, t);
+    }
+  });
+
+  // Gentle hover bob
+  let bobT = 0;
+  function bob() {
+    if (!landingActive) return;
+    requestAnimationFrame(bob);
+    bobT += 0.01;
+    droneGroup.position.y += Math.sin(bobT) * 0.002;
+  }
+  bob();
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * Math.min(Math.max(t, 0), 1);
+}
+
+// ============ LANDING → APP TRANSITION ============
+
+function enterApp() {
+  const landingEl = document.getElementById('landing-view');
+  const appEl = document.getElementById('app-view');
+  
+  landingEl.classList.add('fade-out');
+  
+  setTimeout(() => {
+    // Hide landing completely
+    landingEl.style.display = 'none';
+    landingActive = false;
+    
+    // Stop drone render loop (memory cleanup)
+    if (droneRenderer) {
+      droneRenderer.dispose();
+    }
+    
+    // Show app
+    appEl.style.display = 'block';
+    document.body.classList.add('app-active');
+    
+    // Reset scroll to top for app
+    window.scrollTo(0, 0);
+    
+    // Initialize the city map (call your existing init function)
+    initCityMap(); 
+    
+  }, 800);
+}
+
+// Boot landing on page load
+document.addEventListener('DOMContentLoaded', () => {
+  initDroneScene();
+  
+  document.getElementById('enter-app-btn')
+    .addEventListener('click', enterApp);
+});
+
+// ============ END LANDING ============
+
+function initCityMap() {
 const uuid = () => Math.random().toString(36).substring(2, 9);
 
 const defaultIssues = [
@@ -787,4 +953,5 @@ function initApp() {
   updateUI();
 }
 
-initApp();
+  initApp();
+}
